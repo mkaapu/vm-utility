@@ -20,42 +20,61 @@ set -e
 
 # Path of the executing script
 DIR=$(dirname "$0")
+
 # Name of virtual machine instance
 NAME=
-# Number of CPUs
+
+# -c option with number of CPUs
 CPUS=
-# Disk space
+
+# -d option with disk space
 DISK=
-# Amount of memory
+
+# -m option with amount of memory
 MEMORY=
-# Path to a private SSH key
+
+# -f option with path to a private SSH key file
 KEY=
-# The type of the key
+
+# -t option with the type of the key
 TYPE=
-# true if new SSH key will be generated
+
+# with -k option a new SSH key will be generated
 KEYGEN=
-# Static IP address (for example: 10.101.123.111)
+
+# -i option with a static IP address (for example: 10.101.123.111)
 IP=
-# Route to be added on your host to a new VM instance with a static IP
+
+# Optional image for VM instance creation
 IMAGE=
-# Quiet mode with no usage or extra notes with errors etc.
+
+# Quiet mode (no usage displayed with errors) with q option
 QUIET=
+
 # Level of logging verbosity (for the multipass launch command)
 VERBOSE=0
-# Path to a user-data cloud-init configuration (multipass launch)
+
+# Path to a user-data cloud-init configuration (multipass launch --cloud-init)
 INIT=
-# Network interface spec to the instance (multipass launch)
+
+# Network interface spec to the instance (multipass launch --network)
 NET=
-# Adds one '--network bridged' network (multipass launch)
+
+# Adds one '--network bridged' network (multipass launch --bridged)
 BRIDGED=
-# <local-path>:<instance-path> mount (multipass launch)
+
+# <local-path>:<instance-path> mount (multipass launch --mount)
 MOUNT=
-# Maximum time, in seconds, to wait (for multipass lauch command)
+
+# Maximum time, in seconds, to wait (for multipass lauch command --timeout)
 TIMEOUT=
+
 # multipass lauch command
 LAUNCH='multipass launch'
+
 # mp-ssh script command for setting SSH connection/static IP
 SSH="$DIR/mp-ssh"
+
 # List of error messages to display when exiting with error
 ERRORS=()
 
@@ -298,7 +317,7 @@ while true; do
       shift 2
       ;;
     --bridged)
-      BRIDGED="  --bridged"
+      BRIDGED=" --bridged"
       shift
       ;;
     --mount)
