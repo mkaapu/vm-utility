@@ -181,16 +181,17 @@ exit_error() {
 # Get multipass lauch command with given arguments
 # Gloabals:
 #   LAUNCH  final multipass launch command
-#   CPUS    argument read
-#   DISK    argument read
-#   MEMORY  argument read
-#   MOUNT   argument read
-#   TIMEOUT argument read
-#   INIT    argument read
-#   NET     argument read
-#   BRIDGED argument read
-#   NAME    argument read
-#   VERBOSE argument read
+#   CPUS    -c option
+#   DISK    -d option
+#   MEMORY  -m option
+#   MOUNT   --mount option
+#   TIMEOUT --timeout option
+#   INIT    --cloud-init option
+#   NET     --network option
+#   BRIDGED --briged option
+#   NAME    VM instance name
+#   VERBOSE launch command verbosity
+#   IMAGE   optional image to launch
 # Arguments:
 #   None
 # Outputs:
@@ -221,11 +222,11 @@ launch_command() {
 # Get mp-ssh command with given arguments
 # Globals:
 #   SSH    final mp-ssh command
-#   NAME   argument read
-#   IP     argument read
-#   KEY    argument read
-#   TYPE   argument read
-#   KEYGEN argument read
+#   NAME   VM instance name
+#   IP     -i option
+#   KEY    -f option
+#   TYPE   -t option
+#   KEYGEN -k option
 # Arguments:
 #   None
 # Outputs:
