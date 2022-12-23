@@ -1,0 +1,337 @@
+#!/usr/bin/env bash
+set -e
+
+# Script to extend the usability, scripting and automation possiblities
+# of the Multipass tool.
+#
+# Enables creation of Multipass instance with a static IP address
+# and SSH connection from host machine without extra manual steps.
+# Provides a minimal interface suitable for use by other shell scripts
+# and automation tools.
+#
+# Multipass installation is needed:
+# snap install multipass
+#
+# Check the usage() function below for more usage options
+
+#######################################
+# DEFAULT VALUES
+#######################################
+
+# Path of the executing script
+DIR=$(dirname "$0")
+# Name of virtual machine instance
+NAME=
+# Number of CPUs
+CPUS=
+# Disk space
+DISK=
+# Amount of memory
+MEMORY=
+# Path to a private SSH key
+KEY=
+# The type of the key
+TYPE=
+# true if new SSH key will be generated
+KEYGEN=
+# Static IP address (for example: 10.101.123.111)
+IP=
+# Route to be added on your host to a new VM instance with a static IP
+IMAGE=
+# Quiet mode with no usage or extra notes with errors etc.
+QUIET=
+# Level of logging verbosity (for the multipass launch command)
+VERBOSE=0
+# Path to a user-data cloud-init configuration (multipass launch)
+INIT=
+# Network interface spec to the instance (multipass launch)
+NET=
+# Adds one '--network bridged' network (multipass launch)
+BRIDGED=
+# <local-path>:<instance-path> mount (multipass launch)
+MOUNT=
+# Maximum time, in seconds, to wait (for multipass lauch command)
+TIMEOUT=
+# multipass lauch command
+LAUNCH='multipass launch'
+# mp-ssh script command for setting SSH connection/static IP
+SSH="$DIR/mp-ssh"
+# List of error messages to display when exiting with error
+ERRORS=()
+
+#######################################
+# FUNCTIONS
+#######################################
+
+#######################################
+# Shorter usage
+# Arguments:
+#   None
+# Outputs:
+#   Writes usage to stdout
+#######################################
+short_usage() {
+  echo "Usage: $0 [options] [[<remote:>]<image> | <url>]"
+  echo
+  echo "Create and start a new virtual machine (VM) instance using multipass tool"
+  echo "and enable acccess to the VM instance from host machine through SSH."
+  echo
+  echo "Example of creating a new Ubuntu LTS VM with a static IP address:"
+  echo "$ $0 --name my-vm --ip 10.10.10.10"
+  echo
+  echo "Options:"
+  echo "  -h, --help		  	Displays help on commandline options."
+  echo "  -c, --cpus <cpus>            	Numbers of CPUs to allocate."
+  echo "                                Minimum: 1, default: 1."
+  echo "  -d, --disk <disk>             Disk space to allocate. Positive"
+  echo "                              	integers, in bytes, or with K, M, G"
+  echo "                              	suffix."
+  echo "                             	Minimum: 512M, default: 5G."
+  echo "  -m, --memory <mem>          	Amount of memory to allocate. Positive"
+  echo "                              	integers, in bytes, or with K, M, G"
+  echo "                              	suffix"
+  echo "                               	Minimum: 128M, default: 1G."
+  echo "  -n, --name                  	Name for the instance. If it is"
+  echo "                               	'primary' (the configured primary"
+  echo "                              	instance name), the user's home"
+  echo "                              	directory is mounted inside the newly"
+  echo "                               	launced instance, in 'Home'."
+  echo "  -f, --filename <filename>	Specifies the path to the private"
+  echo "				SSH key file. Default:"
+  echo "				~/.ssh/id_ed25519."
+  echo "  -t, --type <type>            	Specifies the type of SSH key to create."
+  echo "				The possible values are:"
+  echo "				ecdsa | ed25519 | rsa"
+  echo "				Default: ed25519."
+  echo "  -k, --keygen			Generates a new SSH key pair based on"
+  echo "				given key file (-f) and type (-t)"
+  echo "				unless such a key already exists."
+  echo "  -i, -- ip <ip>	       	Sets a static IP address for the"
+  echo "                              	instance. Note that there will be no"
+  echo "                               	IP address conflict detection with"
+  echo "                               	any existing addresses."
+  echo "  -q, --quiet			Silence $0."
+  echo
+  echo "Arguments:"
+  echo "  image                      	Optional image to launch. If ommitted,"
+  echo "                                then the default Ubuntu LTS will be"
+  echo "                                used."
+  echo
+  echo "More about"
+  echo "options and arguments:       	All options and aguments used by the"
+  echo "                             	'multipass launch' are available:"
+  echo "                               	$ multipass help launch"
+}
+
+#######################################
+# Longer usage
+# Arguments:
+#   None
+# Outputs:
+#   Prints usage to stdout
+#######################################
+long_usage() {
+  if [ -f $DIR/usage ]; then
+    less $DIR/usage
+  else
+    short_usage
+  fi
+}
+
+#######################################
+# Exit with error status 1 and display error messages.
+# Globals:
+#   ERRORS as an array of error messages
+#   QUIET  if true, no usage displayed with errors
+# Arguments:
+#   None
+# Outputs:
+#   Possible error messages written to stderr
+#######################################
+exit_error() {
+  for error in "${ERRORS[@]}"; do
+    >&2 echo $error
+  done
+  if [ -z $QUIET ]; then
+    short_usage
+  fi
+  exit 1
+}
+
+#######################################
+# Get multipass lauch command with given arguments
+# Gloabals:
+#   LAUNCH  final multipass launch command
+#   CPUS    argument read
+#   DISK    argument read
+#   MEMORY  argument read
+#   MOUNT   argument read
+#   TIMEOUT argument read
+#   INIT    argument read
+#   NET     argument read
+#   BRIDGED argument read
+#   NAME    argument read
+#   VERBOSE argument read
+# Arguments:
+#   None
+# Outputs:
+#   Writes launch command to stdout
+#######################################
+launch_command() {
+  LAUNCH="$LAUNCH\
+          $CPUS\
+          $DISK\
+          $MEMORY\
+          $MOUNT\
+          $TIMEOUT\
+          $INIT\
+          $NET\
+          $BRIDGED"
+  if [ $NAME ]; then
+    LAUNCH="$LAUNCH -n $NAME"
+  fi
+  if [ "$VERBOSE" -gt "0" ]; then
+    LAUNCH="$LAUNCH -"
+    for v in $(seq 1 $VERBOSE); do LAUNCH="${LAUNCH}v"; done
+  fi
+  LAUNCH="$LAUNCH $IMAGE"
+  echo $LAUNCH
+}
+
+#######################################
+# Get mp-ssh command with given arguments
+# Globals:
+#   SSH    final mp-ssh command
+#   NAME   argument read
+#   IP     argument read
+#   KEY    argument read
+#   TYPE   argument read
+#   KEYGEN argument read
+# Arguments:
+#   None
+# Outputs:
+#   Writes mp-ssh command to stdout
+#######################################
+ssh_command() {
+  if [ ! $NAME ]; then
+    NAME=primary
+  fi
+  SSH="$SSH\
+       $IP\
+       $KEY\
+       $TYPE\
+       $KEYGEN\
+       -q $NAME"
+ echo $SSH
+}
+
+#######################################
+# EXECUTION
+#######################################
+
+#######################################
+# Handling command line arguments
+#######################################
+if ! OPTS="$(getopt \
+  --longoptions help,cpus:,disk:,memory:,name:,filename:,type:,keygen,ip:,quiet,\
+verbose,cloud-init:,network:,bridged,mount:,timeout: \
+  --options hc:d:m:n:f:t:ki:qv \
+  --name "$(basename "$0")" \
+  -- "$@"
+)"; then
+  short_usage
+  exit 1
+fi
+eval set -- "$OPTS"
+while true; do
+  case "$1" in
+    --help|-h)
+      long_usage;
+      exit
+      ;;
+    --cpus|-c)
+      CPUS=" -c $2"
+      shift 2
+      ;;
+    --disk|-d)
+      DISK=" -d $2"
+      shift 2
+      ;;
+    --memory|-m)
+      MEMORY=" -m $2"
+      shift 2
+      ;;
+    --name|-n)
+      NAME="$2"
+      shift 2
+      ;;
+    --filename|-f)
+      KEY=" -f $2"
+      shift 2
+      ;;
+    --type|-t)
+      TYPE=" -t $2"
+      shift 2
+      ;;
+    --keygen|-k)
+      KEYGEN=" -k"
+      shift
+      ;;
+    --ip|-i)
+      IP=" -i $2"
+      shift 2
+      ;;
+    --quiet|-q)
+      QUIET=" -q"
+      shift
+      ;;
+    --verbose|-v)
+      VERBOSE=$((VERBOSE+1))
+      shift
+      ;;
+    --cloud-init)
+      INIT=" --cloud-init $2"
+      shift 2
+      ;;
+    --network)
+      NET=" --network $2"
+      shift 2
+      ;;
+    --bridged)
+      BRIDGED="  --bridged"
+      shift
+      ;;
+    --mount)
+      MOUNT=" --mount $2"
+      shift 2
+      ;;
+    --timeout)
+      TIMEOUT=" --timeout $2"
+      shift 2
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      echo "DEBUG: No implementation for the option $1"
+      exit 1
+      ;;
+  esac
+done
+
+ARGS=("$@")
+ARGCOUNT=${#ARGS[@]}
+if [ "$ARGCOUNT" -gt "1" ]; then
+  ERRORS+=("Too many arguments supplied")
+  exit_error
+elif [ "$ARGCOUNT" -eq "1" ]; then
+  IMAGE="${ARGS[0]}"
+fi
+
+#######################################
+# Main Execution
+#######################################
+
+$(launch_command) || exit_error
+$(ssh_command) || exit_error

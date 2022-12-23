@@ -1,0 +1,336 @@
+#!/usr/bin/env bash
+set -e
+
+# Script to extend the usability, scripting and automation possiblities
+# of the Multipass tool.
+#
+# Enables SSH connection to a Multipass instance from host machine.
+# Can be used to set a static IP address to multipass instance.
+# Provides a minimal interface suitable for use by other shell scripts
+# and automation tools.
+#
+# Multipass installation is needed:
+# snap install multipass
+#
+# Check the usage() function below for more usage options
+
+#######################################
+# DEFAULT VALUES
+#######################################
+
+# Name of virtual machine instance
+NAME=
+# Path to a private SSH key
+KEY=
+# The type of the key
+TYPE=
+# true if new SSH key will be generated
+KEYGEN=false
+# Static IP address (for example: 10.101.123.111)
+IP=
+# Route to be added on your host to a new VM instance with a static IP
+ROUTE=
+# Quiet mode with no usage or extra notes with errors etc.
+QUIET=false
+# List of error messages to display when exiting with error
+ERRORS=()
+
+#######################################
+# FUNCTIONS
+#######################################
+
+#######################################
+# Usage
+# Arguments:
+#   None
+# Outputs:
+#   Writes usage to stdout
+#######################################
+usage() {
+  echo "Usage: $0 [options] <name>"
+  echo
+  echo "Tool to provides extended accessibility to a multipass VM instance"
+  echo "from host machine through SSH."
+  echo
+  echo "An example of setting a static IP address to a multipass instance:"
+  echo "$ multipass launch --name my-vm"
+  echo "$ $0 --ip 10.10.10.10 my-vm"
+  echo "$ ssh ubuntu@10.10.10.10"
+  echo
+  echo "Options:"
+  echo "  -h, --help		  	Displays help on commandline options."
+  echo "  -f, --filename <filename>	Specifies the path to the private"
+  echo "				SSH key file. Default:"
+  echo "				~/.ssh/id_ed25519."
+  echo "  -t, --type <type>            	Specifies the type of SSH key to create."
+  echo "				The possible values are:"
+  echo "				ecdsa | ed25519 | rsa"
+  echo "				Default: ed25519."
+  echo "  -k, --keygen			Generates a new SSH key pair based on"
+  echo "				given key file (-f) and type (-t)"
+  echo "				unless such a key already exists."
+  echo "  -i, -- ip <ip>	       	Sets a static IP address for the"
+  echo "                              	instance. Note that there will be no"
+  echo "                               	IP address conflict detection with"
+  echo "                               	any existing addresses."
+  echo "  -q, --quiet			Silence $0."
+  echo
+  echo "Arguments:"
+  echo "  name				Name of the multipass instance."
+}
+
+#######################################
+# Exit with error status 1 and display error messages.
+# Globals:
+#   ERRORS as an array of error messages
+#   QUIET  if true, no usage displayed with errors
+# Arguments:
+#   None
+# Outputs:
+#   Possible error messages written to stderr
+#######################################
+exit_error() {
+  for error in "${ERRORS[@]}"; do
+    >&2 echo $error
+  done
+  if ! $QUIET; then
+    usage
+  fi
+  exit 1
+}
+
+#######################################
+# Validate a IP address.
+# Arguments:
+#   IP address
+# Outputs:
+#  0 if valid IP address, non-zero on error.
+#
+# Derivative work:
+# https://stackoverflow.com/questions/13777387/check-for-ip-validity
+#######################################
+valid_ip() {
+  # Set up local variables
+  local ip=${1:-NO_IP_PROVIDED}
+  local IFS=.; local -a a=($ip)
+  # Start with a regex format test
+  [[ $ip =~ ^[0-9]+(\.[0-9]+){3}$ ]] || return 1
+  # Test values of quads
+  local quad
+  for quad in {0..3}; do
+    [[ "${a[$quad]}" -gt 255 ]] && return 1
+  done
+  return 0
+}
+
+#######################################
+# Validate the type of SSH key.
+# Arguments:
+#   SSH key type
+# Outputs:
+#   0 if valid type, non-zero on error.
+#######################################
+valid_type() {
+  if [ $1 == 'ecdsa' \
+    -o $1 == 'ed25519' \
+    -o $1 == 'rsa' ]
+  then
+    return 0
+  fi
+  return 1
+}
+
+#######################################
+# Specify SHH key file path and key type.
+# Globals:
+#   KEY  specified if empty (without -f option)
+#   TYPE specified if empty (without -t option)
+# Arguments:
+#   Private SSH key file path
+#   SSH key type
+#######################################
+specify_key()  {
+  local key=$1
+  local type=$2
+  # set default values without -f and -t options
+  if [ -z $key ] && [ -z $type ]; then
+    KEY=~/.ssh/id_ed25519
+    TYPE=ed25519
+  # type is given with -t option
+  elif [ $type ] && [ -z $key ]; then
+    KEY=~/.ssh/id_$type
+  # key file is given with -f option
+  elif [ $key ] && [ -z $type ]; then
+    # key file name can be id_<valid_type>
+    local filename=$(basename $key)
+    local name=${filename:3}
+    if [ $name ] && valid_type $name; then
+      TYPE=$name
+    else
+      TYPE=ed25519
+    fi
+  fi
+}
+
+#######################################
+# Get the IP address of the multipass instance.
+# Arguments:
+#   None
+# Outputs:
+#   Writes IP address to stdout
+#######################################
+instance_ip() {
+  local line=($(multipass info $1 | grep IPv4))
+  echo ${line[1]}
+}
+
+#######################################
+# EXECUTION
+#######################################
+
+#######################################
+# Handling command line arguments
+#######################################
+if ! OPTS="$(getopt \
+  --longoptions help,filename:,type:,keygen,ip:quiet \
+  --options hf:t:ki:q \
+  --name "$(basename "$0")" \
+  -- "$@"
+)"; then
+  usage
+  exit 1
+fi
+eval set -- "$OPTS"
+while true; do
+  case "$1" in
+    --help|-h)
+      usage
+      exit
+      ;;
+    --filename|-f)
+      KEY="$2"
+      shift 2
+      ;;
+    --type|-t)
+      TYPE="$2"
+      if ! valid_type "$TYPE"; then
+        ERRORS+=("'$TYPE' is not a valid SSH key type.")
+      fi
+      shift 2
+      ;;
+    --keygen|-k)
+      KEYGEN=true
+      shift
+      ;;
+    --ip|-i)
+      IP="$2"
+      if ! valid_ip "$IP"; then
+        ERRORS+=("$IP is not a valid IP address.")
+      fi
+      ROUTE=$(awk -F"." '{print $1"."$2"."$3".0"}'<<<$IP)
+      shift 2
+      ;;
+    --quiet|-q)
+      QUIET=true
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      echo "DEBUG: No implementation for the option $1"
+      exit 1
+      ;;
+  esac
+done
+
+ARGS=("$@")
+ARGCOUNT=${#ARGS[@]}
+if [ "$ARGCOUNT" -eq "1" ]; then
+  NAME="${ARGS[0]}"
+else
+  if [ "$ARGCOUNT" -eq "0" ]; then
+    ERRORS+=("No multipass instance name given.")
+  elif [ "$ARGCOUNT" -gt "1" ]; then
+    ERRORS+=("Too many arguments supplied.")
+  fi
+fi
+
+# Exit with possible argument errors
+if [ ${#ERRORS[@]} -ne 0 ]; then
+  exit_error
+fi
+
+#######################################
+# Main Execution
+#######################################
+
+specify_key "$KEY" "$TYPE"
+echo SSH key file: $KEY
+echo Key type: $TYPE
+echo New key generation: $KEYGEN
+echo VM instance name: $NAME
+
+# SSH key pair generation with --keygen option
+if $KEYGEN; then
+  if [ ! -f $KEY ]; then
+    ssh-keygen -q -t $TYPE -f $KEY -N ''
+  fi
+fi
+
+# If public key not found
+if [ ! -f $KEY.pub ]; then
+  ERRORS+=("Public key: $KEY.pub not found.")
+  ERRORS+=("To generate a new SSH key pair use -k option.")
+  exit_error
+fi
+
+# Copying the public key to the multipass instance.
+# If multipass instance name is wrong or missing,
+# exec command fails and displays an error message.
+if ! cat $KEY.pub | multipass exec $NAME -- tee -a .ssh/authorized_keys > /dev/null
+then
+   exit_error
+fi
+
+# The IP address given by multipass is used without --ip option.
+# Otherwise a static IP is set for the multipass instance.
+if [ -z "$IP" ]; then
+  IP=$(instance_ip $NAME)
+else
+  # Copies cloud-init configuration file,
+  # removes comments and adds static IP
+  # to the new configuraton file
+  # and then applies the new netplan
+  # inside the multipass instance.
+  multipass exec $NAME -- bash -c "
+    cat /etc/netplan/50-cloud-init.yaml \
+      | grep -v '#' \
+      | sed 's/^\( *\)dhcp4: true$/&\n\1addresses:\n\1- ${IP}\/24/' \
+      | sudo tee /etc/netplan/99-static.yaml > /dev/null
+    sudo netplan apply
+  " $IP
+  # Adds a new route on host if not available
+  sudo ip route replace $ROUTE/24 dev mpqemubr0
+fi
+
+echo IP: $IP
+
+# Makes sure there will be no duplicate entries
+# with the same IP address in the known_hosts.
+if [ -f ~/.ssh/known_hosts ]; then
+  ssh-keygen -R $IP 2> /dev/null
+fi
+# Adds the public key to known_hosts file.
+ssh-keyscan -H -t $TYPE $IP >> ~/.ssh/known_hosts
+
+echo
+echo "Open a shell prompt on the $NAME:"
+echo "$ multipass shell $NAME"
+echo "OR"
+if [ "$(dirname $KEY)" == ~/.ssh ] && [ "$(basename $KEY)" == id_"$TYPE" ]; then
+  echo "$ ssh ubuntu@$IP"
+else
+  echo "$ ssh -i $KEY ubuntu@$IP"
+fi
