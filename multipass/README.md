@@ -36,7 +36,7 @@ Enables creation of Multipass instance with a static IP address and SSH connecti
 ./mp-launch -h
 ```
 OR
-Read [usage](https://github.com/mkaapu/vm-utility/blob/main/multipass/usage)
+read [usage](https://github.com/mkaapu/vm-utility/blob/main/multipass/usage).
 
 ### Example
 Create a new Ubuntu LTS VM with a static IP address and enable acccess to the VM instance from host machine through SSH:
