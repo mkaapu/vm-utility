@@ -64,11 +64,16 @@ Options:
                                         the mount point will be the same as the
                                         absolute path of <local-path>
   --timeout <timeout>                   Maximum time, in seconds, to wait for
-                                        the command to complete. Note that some
-                                        background operations may continue
+                                        the VM instance to launch. Note that
+                                        some background operations may continue
                                         beyond that. By default, instance
                                         startup and initialization is limited to
                                         5 minutes each.
+  -T <timeout>                          Sets the timeout seconds for attempts to
+                                        scan a public key from the VM instance
+                                        to enable SSH connection from the host.
+                                        The default is 30.
+  -q, --quiet                           Silence mp-launch to not display usage.
 
 Arguments:
   image                                 Optional image to launch. If omitted,

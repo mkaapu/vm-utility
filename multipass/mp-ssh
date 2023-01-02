@@ -12,6 +12,9 @@ set -e
 # Multipass installation is needed:
 # snap install multipass
 #
+# sudo permissions are needed to add a route from host to VM with
+# a static IP.
+#
 # Check the usage() function below for more usage options
 
 #######################################
@@ -19,7 +22,7 @@ set -e
 #######################################
 
 # Name of virtual machine instance
-NAME=
+NAME='primary'
 # Path to a private SSH key
 KEY=
 # The type of the key
@@ -32,6 +35,8 @@ IP=
 ROUTE=
 # Quiet mode with no usage or extra notes with errors etc.
 QUIET=false
+# Timeout for connection attemps in seconds
+TIMEOUT=30
 # List of error messages to display when exiting with error
 ERRORS=()
 
@@ -71,8 +76,12 @@ usage() {
   echo "				unless such a key already exists."
   echo "  -i, -- ip <ip>	       	Sets a static IP address for the"
   echo "                              	instance. Note that there will be no"
-  echo "                               	IP address conflict detection with"
-  echo "                               	any existing addresses."
+  echo "				IP address conflict detection with"
+  echo "				any existing addresses."
+  echo "  -T <timeout>			Sets the timeout seconds for attempts to"
+  echo "				scan a public key from the VM instance"
+  echo "				to enable SSH connection from the host."
+  echo "				The default is 30."
   echo "  -q, --quiet			Silence $0."
   echo
   echo "Arguments:"
@@ -193,7 +202,7 @@ instance_ip() {
 #######################################
 if ! OPTS="$(getopt \
   --longoptions help,filename:,type:,keygen,ip:quiet \
-  --options hf:t:ki:q \
+  --options hf:t:ki:T:q \
   --name "$(basename "$0")" \
   -- "$@"
 )"; then
@@ -230,6 +239,10 @@ while true; do
       ROUTE=$(awk -F"." '{print $1"."$2"."$3".0"}'<<<$IP)
       shift 2
       ;;
+    -T)
+      TIMEOUT="$2"
+      shift 2
+      ;;
     --quiet|-q)
       QUIET=true
       shift
@@ -249,12 +262,8 @@ ARGS=("$@")
 ARGCOUNT=${#ARGS[@]}
 if [ "$ARGCOUNT" -eq "1" ]; then
   NAME="${ARGS[0]}"
-else
-  if [ "$ARGCOUNT" -eq "0" ]; then
-    ERRORS+=("No multipass instance name given.")
-  elif [ "$ARGCOUNT" -gt "1" ]; then
-    ERRORS+=("Too many arguments supplied.")
-  fi
+elif [ "$ARGCOUNT" -gt "1" ]; then
+  ERRORS+=("Too many arguments supplied.")
 fi
 
 # Exit with possible argument errors
@@ -270,7 +279,6 @@ specify_key "$KEY" "$TYPE"
 echo SSH key file: $KEY
 echo Key type: $TYPE
 echo New key generation: $KEYGEN
-echo VM instance name: $NAME
 
 # SSH key pair generation with --keygen option
 if $KEYGEN; then
@@ -289,13 +297,15 @@ fi
 # Copying the public key to the multipass instance.
 # If multipass instance name is wrong or missing,
 # exec command fails and displays an error message.
-if ! cat $KEY.pub | multipass exec $NAME -- tee -a .ssh/authorized_keys > /dev/null
+if ! cat $KEY.pub | multipass exec $NAME -- \
+  tee -a /home/ubuntu/.ssh/authorized_keys \
+  > /dev/null
 then
    exit_error
 fi
 
-# The IP address given by multipass is used without --ip option.
-# Otherwise a static IP is set for the multipass instance.
+# Static IP is set for VM instance if --ip option is used
+# Otherwise a dynamic IP given by Multipass is used.
 if [ -z "$IP" ]; then
   IP=$(instance_ip $NAME)
 else
@@ -323,7 +333,14 @@ if [ -f ~/.ssh/known_hosts ]; then
   ssh-keygen -R $IP 2> /dev/null
 fi
 # Adds the public key to known_hosts file.
-ssh-keyscan -H -t $TYPE $IP >> ~/.ssh/known_hosts
+if ! ssh-keyscan -H -t $TYPE -T $TIMEOUT $IP >> ~/.ssh/known_hosts
+then
+  ERRORS+=("SSH2_MSG_KEX_ECDH_REPLY not received from the $NAME"\
+  "in $TIMEOUT seconds.")
+  ERRORS+=("~/.ssh/known_hosts could not be updated automatically.")
+  ERRORS+=("Timeout seconds can be extended with the -T option.")
+  exit_error
+fi
 
 echo
 echo "Open a shell prompt on the $NAME:"
