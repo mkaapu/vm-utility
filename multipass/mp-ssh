@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-set -e
-
+#
 # Script to extend the usability, scripting and automation possiblities
 # of the Multipass tool.
 #
@@ -16,6 +15,16 @@ set -e
 # a static IP.
 #
 # Check the usage() function below for more usage options
+
+#######################################
+# Shell options
+#######################################
+set -e
+
+#######################################
+# Includes
+#######################################
+. mp-calls
 
 #######################################
 # DEFAULT VALUES
@@ -182,18 +191,6 @@ specify_key()  {
 }
 
 #######################################
-# Get the IP address of the multipass instance.
-# Arguments:
-#   None
-# Outputs:
-#   Writes IP address to stdout
-#######################################
-instance_ip() {
-  local line=($(multipass info $1 | grep IPv4))
-  echo ${line[1]}
-}
-
-#######################################
 # EXECUTION
 #######################################
 
@@ -294,20 +291,16 @@ if [ ! -f $KEY.pub ]; then
   exit_error
 fi
 
-# Copying the public key to the multipass instance.
-# If multipass instance name is wrong or missing,
-# exec command fails and displays an error message.
-if ! cat $KEY.pub | multipass exec $NAME -- \
-  tee -a /home/ubuntu/.ssh/authorized_keys \
-  > /dev/null
-then
-   exit_error
+# Copy the public SSH key to the multipass instance.
+# Multipass displays an error message if the instance name is wrong.
+if ! mp-copy-ssh $KEY.pub $NAME; then
+  exit_error
 fi
 
 # Static IP is set for VM instance if --ip option is used
 # Otherwise a dynamic IP given by Multipass is used.
 if [ -z "$IP" ]; then
-  IP=$(instance_ip $NAME)
+  IP=$(mp-info-ip $NAME)
 else
   # Copies cloud-init configuration file,
   # removes comments and adds static IP
@@ -346,7 +339,9 @@ echo
 echo "Open a shell prompt on the $NAME:"
 echo "$ multipass shell $NAME"
 echo "OR"
-if [ "$(dirname $KEY)" == ~/.ssh ] && [ "$(basename $KEY)" == id_"$TYPE" ]; then
+if [ "$(dirname $KEY)" == ~/.ssh ] && \
+   [ "$(basename $KEY)" == id_"$TYPE" ]
+then
   echo "$ ssh ubuntu@$IP"
 else
   echo "$ ssh -i $KEY ubuntu@$IP"

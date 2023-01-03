@@ -57,7 +57,7 @@ QUIET=
 # Level of logging verbosity (for the multipass launch command)
 VERBOSE=0
 
-# Path to a user-data cloud-init configuration (multipass launch --cloud-init)
+# User-data cloud-init configuration (multipass launch --cloud-init)
 INIT=
 
 # Network interface spec to the instance (multipass launch --network)
@@ -69,7 +69,7 @@ BRIDGED=
 # <local-path>:<instance-path> mount (multipass launch --mount)
 MOUNT=
 
-# Maximum time, in seconds, to wait (for multipass lauch command --timeout)
+# Seconds to wait VM lauch (for multipass lauch command --timeout)
 TIMEOUT=
 
 # -T option with time in seconds to wait for mp-ssh to connect to VM
@@ -261,8 +261,8 @@ ssh_command() {
 # Handling command line arguments
 #######################################
 if ! OPTS="$(getopt \
-  --longoptions help,cpus:,disk:,memory:,name:,filename:,type:,keygen,ip:,quiet,\
-verbose,cloud-init:,network:,bridged,mount:,timeout: \
+  --longoptions help,cpus:,disk:,memory:,name:,filename:,type:,keygen,\
+ip:,quiet,verbose,cloud-init:,network:,bridged,mount:,timeout: \
   --options hc:d:m:n:f:t:ki:qvT: \
   --name "$(basename "$0")" \
   -- "$@"

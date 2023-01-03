@@ -1,0 +1,33 @@
+# Helper functions to extend the usability, scripting and automation
+# possibilities of the Multipass tool.
+
+#######################################
+# Get the IP address of a multipass instance.
+# Arguments:
+#   Name of the VM instance
+# Outputs:
+#   Writes IP address to stdout
+#######################################
+mp-info-ip() {
+  local line=($(multipass info $1 | grep IPv4))
+  echo ${line[1]}
+}
+
+#######################################
+# Appends the public SSH key of the host to the authorized keys
+# of the Multipass instance.
+# Arguments:
+#   Path to the public key on the host
+#   Name of the VM instance
+#######################################
+mp-copy-ssh() {
+  local key=$(cat $1)
+  local instance=$2
+  local authorized=/home/ubuntu/.ssh/authorized_keys
+  multipass exec $instance -- bash -c "
+    if ! echo $key | grep -f $authorized > /dev/null
+    then
+      echo $key >> $authorized
+    fi
+  " $key $authorized
+}
