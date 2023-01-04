@@ -302,18 +302,7 @@ fi
 if [ -z "$IP" ]; then
   IP=$(mp-info-ip $NAME)
 else
-  # Copies cloud-init configuration file,
-  # removes comments and adds static IP
-  # to the new configuraton file
-  # and then applies the new netplan
-  # inside the multipass instance.
-  multipass exec $NAME -- bash -c "
-    cat /etc/netplan/50-cloud-init.yaml \
-      | grep -v '#' \
-      | sed 's/^\( *\)dhcp4: true$/&\n\1addresses:\n\1- ${IP}\/24/' \
-      | sudo tee /etc/netplan/99-static.yaml > /dev/null
-    sudo netplan apply
-  " $IP
+  mp-static-ip $NAME $IP
   # Adds a new route on host if not available
   sudo ip route replace $ROUTE/24 dev mpqemubr0
 fi
