@@ -1,0 +1,56 @@
+# Helper functions to extend the usability, scripting and automation
+# possibilities of the Multipass tool.
+
+#######################################
+# Get the IP address of a multipass instance.
+# Arguments:
+#   Multipass instance name
+# Outputs:
+#   Writes IP address to stdout
+#######################################
+mp-info-ip() {
+  local line=($(multipass info $1 | grep IPv4))
+  echo ${line[1]}
+}
+
+#######################################
+# Append the public SSH key of the host to the authorized keys
+# of the Multipass instance.
+# Arguments:
+#   Path to the public key on the host
+#   Multipass instance name
+#######################################
+mp-copy-ssh() {
+  local key=$(cat $1)
+  local name=$2
+  local authorized=/home/ubuntu/.ssh/authorized_keys
+  multipass exec $name -- bash -c "
+    if ! echo $key | grep -f $authorized > /dev/null
+    then
+      echo $key >> $authorized
+    fi
+  " $key $authorized
+}
+
+#######################################
+# Set a static IP address to a Multipass instance.
+# Arguments:
+#   Multipass instance name
+#   IP address
+#######################################
+mp-static-ip() {
+  local name=$1
+  local ip=$2
+  multipass exec $name -- bash -c "
+    # Copies cloud-init configuration file,
+    # removes comments and adds static IP
+    # to the new configuraton file
+    # and then applies the new netplan
+    # inside the multipass instance.
+    cat /etc/netplan/50-cloud-init.yaml \
+      | grep -v '#' \
+      | sed 's/^\( *\)dhcp4: true$/&\n\1addresses:\n\1- ${ip}\/24/' \
+      | sudo tee /etc/netplan/99-static.yaml > /dev/null
+    sudo netplan apply
+  " $ip
+}
