@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+set -e
+
+#######################################
+# DEFAULT VALUES
+#######################################
+
+NAME=primary
+CPUS=1
+DISK=5G
+MEM=1G
+VM_IP=10.10.20.11
+HOST_IP=10.10.10.11
+PORT=2222
+
+#######################################
+# USAGE
+#######################################
+
+usage() {
+  echo "Usage: $0 [options]"
+  echo
+  echo "Create a Ubuntu LTS VM and prepare it as a Jenkis agent."
+  echo
+  echo "Multipass tool is installed if not already installed."
+  echo "New SSH key pair is generated if existing keys are not found."
+  echo "A new Ubuntu LTS VM instance is launched with Multipas tool."
+  echo "Direct SSH connection from the host to VM instance is enabled."
+  echo "A static IP is set to the VM instance."
+  echo "OpenJDK JDK 17 is installed to the VM."
+  echo "A local port is forwarded to the VM to enable SSH tunneling."
+  echo "The SSH tunnel is enabled on startup with cron on the host."
+  echo
+  echo "Options:"
+  echo "  -h, --help            Displays help on commandline options"
+  echo "  -n, --name <name>	VM instance name"
+  echo "  -c, --cpus <cpus>	Number of CVPUs to allocate"
+  echo "			Default: 1"
+  echo "  -d, --disk <disk>	Disk space to allocate"
+  echo "			Default: 5G"
+  echo "  -m, --mem <mem>	Amount of memeory to allocate"
+  echo "			Default: 1G"
+  echo "  -v, --vm-ip <ip>	IP address of VM instance"
+  echo "  -i, --host-ip <ip>	Local IP of the host"
+  echo "  -p, --port <port>	Local port forwarded to the VM instance"
+  echo "			to create a SSH tunnel"
+  echo "			Default: 2222"
+}
+
+#######################################
+# EXECUTION
+#######################################
+
+if ! OPTS="$(getopt \
+  --longoptions help,name:,cpus:,disk:,mem:,vm-ip:,host-ip:,port: \
+  --options hn:c:d:m:v:i:p: \
+  --name "$(basename "$0")" \
+  -- "$@"
+)"; then
+  usage
+  exit 1
+fi
+eval set -- "$OPTS"
+while true; do
+  case "$1" in
+    --help|-h) usage; exit ;;
+    --name|-n) NAME="$2"; shift 2 ;;
+    --cpus|-c) CPUS="$2"; shift 2 ;;
+    --disk|-d) DISK="$2"; shift 2 ;;
+    --mem|-m) MEM="$2"; shift 2 ;;
+    --vm-ip|-v) VM_IP="$2"; shift 2 ;;
+    --host-ip|-i) HOST_IP="$2"; shift 2 ;;
+    --port|-p) PORT="$2"; shift 2 ;;
+    --) shift; break ;;
+    *) echo "DEBUG: No implementation for the option $1" ; exit 1 ;;
+  esac
+done
+
+echo "Installing Multipass tool.."
+sudo snap install multipass
+
+echo "Waiting while multipassd service has been started.."
+echo "If Multipass is not starting up it can be restarted manually:"
+echo "$ sudo snap restart multipass.multipassd"
+while true; do
+  if pgrep -x "multipassd" > /dev/null; then
+    if [ -a /var/snap/multipass/common/multipass_socket ]; then
+      break
+    fi
+  fi
+done
+
+echo "Creating Ubuntu LTS VM instance: $NAME with a static IP: $VM_IP"
+mp-launch -c $CPUS -d $DISK -m $MEM -n $NAME -i $VM_IP -k
+
+echo Install Java JDK 17 to the VM instance
+echo
+echo "Installing Java OpenJDK 17 to the $NAME.."
+multipass exec $NAME -- bash -c "
+  sudo apt-get update
+  sudo apt-get -y --no-install-recommends \
+    install openjdk-17-jre-headless
+"
+
+echo
+echo "Creating SSH tunnel through local port: $PORT to the VM instance."
+SSH_TUNNEL="ssh -f -N ubuntu@${VM_IP} -L ${HOST_IP}:${PORT}:${VM_IP}:22"
+$(echo $SSH_TUNNEL)
+
+echo "Adding SSH tunneling to crontab so it is available on startup."
+crontab -l 2>/dev/null | { cat; echo "@reboot $SSH_TUNNEL"; } | crontab -
+
+echo
+echo "Append a public key to the authorized_keys on the VM instance"
+echo "and you should be able to connect the instance with SSH:"
+echo "$ ssh -p $PORT ubuntu@$HOST_IP"
