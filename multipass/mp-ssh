@@ -275,13 +275,17 @@ fi
 specify_key "$KEY" "$TYPE"
 echo SSH key file: $KEY
 echo Key type: $TYPE
-echo New key generation: $KEYGEN
 
 # SSH key pair generation with --keygen option
 if $KEYGEN; then
   if [ ! -f $KEY ]; then
     ssh-keygen -q -t $TYPE -f $KEY -N ''
+    echo New SSH key was generated.
+  else
+    echo No new SSH keys were generated.
   fi
+else
+  echo No new SSH keys were generated.
 fi
 
 # If public key not found
