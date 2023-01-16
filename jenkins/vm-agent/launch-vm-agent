@@ -79,21 +79,24 @@ done
 echo "Installing Multipass tool.."
 sudo snap install multipass
 
+echo
 echo "Waiting while multipassd service has been started.."
 echo "If Multipass is not starting up it can be restarted manually:"
 echo "$ sudo snap restart multipass.multipassd"
 while true; do
   if pgrep -x "multipassd" > /dev/null; then
     if [ -a /var/snap/multipass/common/multipass_socket ]; then
+      echo
+      echo Multipass is running.
       break
     fi
   fi
 done
 
+echo
 echo "Creating Ubuntu LTS VM instance: $NAME with a static IP: $VM_IP"
 mp-launch -c $CPUS -d $DISK -m $MEM -n $NAME -i $VM_IP -k
 
-echo Install Java JDK 17 to the VM instance
 echo
 echo "Installing Java OpenJDK 17 to the $NAME.."
 multipass exec $NAME -- bash -c "
@@ -107,8 +110,11 @@ echo "Creating SSH tunnel through local port: $PORT to the VM instance."
 SSH_TUNNEL="ssh -f -N ubuntu@${VM_IP} -L ${HOST_IP}:${PORT}:${VM_IP}:22"
 $(echo $SSH_TUNNEL)
 
-echo "Adding SSH tunneling to crontab so it is available on startup."
-crontab -l 2>/dev/null | { cat; echo "@reboot $SSH_TUNNEL"; } | crontab -
+if ! crontab -l | grep "@reboot $SSH_TUNNEL" >/dev/null; then
+  echo
+  echo "Adding SSH tunneling to crontab so it is available on startup."
+  crontab -l 2>/dev/null | { cat; echo "@reboot $SSH_TUNNEL"; } | crontab -
+fi
 
 echo
 echo "Append a public key to the authorized_keys on the VM instance"
