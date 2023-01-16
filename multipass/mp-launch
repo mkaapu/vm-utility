@@ -156,8 +156,8 @@ short_usage() {
 #   Prints usage to stdout
 #######################################
 long_usage() {
-  if [ -f $DIR/usage ]; then
-    less $DIR/usage
+  if [ -f $DIR/mp-launch-usage ]; then
+    less $DIR/mp-launch-usage
   else
     short_usage
   fi
