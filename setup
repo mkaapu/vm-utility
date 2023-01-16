@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+set -e
+
+# vm-utility installation
+#
+# Check usage below.
+
+#######################################
+# DEFAULT VALUES
+#######################################
+
+INTERACTIVE=
+UTILITY_DIR="$(dirname -- "${BASH_SOURCE[0]}")"
+DESTINATION="/usr/local/bin/"
+
+#######################################
+# FUNCTIONS
+#######################################
+
+usage() {
+  echo "Usage: $0 [options]"
+  echo
+  echo "Makes vm-utility tools available for all users and scripts by"
+  echo "coping them to /usr/local/bin."
+  echo
+  echo "Options:"
+  echo "  -h, --help		Displays help on commandline options."
+  echo "  -i, --interactive	Prompts before overwriting files"
+  echo "			in /usr/local/bin."
+}
+
+#######################################
+# EXECUTION
+#######################################
+
+#######################################
+# Handling command line arguments
+#######################################
+if ! OPTS="$(getopt \
+  --longoptions help,interactive \
+  --options hi \
+  --name "$(basename "$0")" \
+  -- "$@"
+)"; then
+  usage
+  exit 1
+fi
+eval set -- "$OPTS"
+while true; do
+  case "$1" in
+    --help|-h)
+      usage;
+      exit
+      ;;
+    --interactive|-i)
+      INTERACTIVE="-i"
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      echo "DEBUG: No implementation for the option $1"
+      exit 1
+      ;;
+  esac
+done
+ARGS=("$@")
+ARGCOUNT=${#ARGS[@]}
+if [ "$ARGCOUNT" -gt "0" ]; then
+  echo Arguments not expected.
+  usage
+  exit 1
+fi
+
+#######################################
+# Main Execution
+#######################################
+
+sudo cp -v $INTERACTIVE \
+  $UTILITY_DIR/multipass/mp-calls \
+  $UTILITY_DIR/multipass/mp-ssh \
+  $UTILITY_DIR/multipass/mp-launch \
+  $UTILITY_DIR/multipass/mp-launch-usage \
+  $UTILITY_DIR/jenkins/vm-agent/launch-vm-agent \
+  $DESTINATION.
+echo "vm-utility installed."
