@@ -1,16 +1,19 @@
 # vm-utility
 This repository is just a collection of VM launch and configuration utility tools for scripting and automation.
-Scripts are written with Bash and tested on Ubuntu Linux distributions.
+Scripts are written in Bash and tested on Ubuntu Linux distributions.
+Note that some of the tools need to be exectuted either with superuser privilidges or as root user to complete some administrative commands.
 
 ## Setup
-The setup script will copy vm-utility tools to */usr/bin/local* so they will be available for all users and other tools (although some scripts needs superuser privilidges to execute). So to clone and setup tools, run:
+The setup script will copy vm-utility tools to */usr/bin/local* so they will be available for all users and other tools. 
+
+To clone and install tools, run:
 ```
 git clone https://github.com/mkaapu/vm-utility.git
-vm-utility/setup
+sudo vm-utility/setup
 ```
-The setup tool has also interactive mode with -i option which will prompt before owerwriting any existing files.
+The setup tool can be executed more interactively with -i option which allows prompt before owerwriting any existing files.
 
-## mp-tools for multipass (multipass directory)
+## Tools to enhance Multipass
 The **multipass** directory contans bash scripts to extend the usability, scripting and automation possiblities of the [Multipass](https://multipass.run/) tool.
 
 ### mp-ssh
@@ -21,3 +24,11 @@ The **multipass** directory contans bash scripts to extend the usability, script
 ### mp-lauch
 - Enables creation of Multipass instance with a static IP address and SSH connection from host machine without extra manual steps.
 - Provides a minimal interface suitable for use by other shell scripts and automation tools.
+
+## Tools to setup Jenkins CI with VMs
+The *jenkins* directory contains bash scripts to help to setup [Jenkins](https://www.jenkins.io/) CI with controller isolation and distributed build agents based on virtual machines.
+
+### launch-vm-agent
+- Creates a Ubuntu LTS VM and prepare it as a Jenkis agent.
+- Installs Java JDK 17 to the VM.
+- Enables logging into the VM using SSH tunnel through a local port of the host.
