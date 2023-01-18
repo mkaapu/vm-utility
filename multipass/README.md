@@ -17,8 +17,8 @@ sudo vm-utility/setup
 Or you can just clone the project and add the multipass directory to your PATH.
 
 ## mp-ssh
-Enables SSH connection to a Multipass instance from host machine.
-It can be used to set a static IP address to multipass instance.
+Enables SSH connection to a Multipass instance from the host machine.
+It can be used to set a static IP address to a multipass instance.
 
 ### Full usage and options:
 ```
@@ -34,7 +34,7 @@ ssh ubuntu@10.10.10.10
 ```
 
 ## mp-launch
-Enables creation of Multipass instance with a static IP address and SSH connection from host machine without extra manual steps.
+Enables creation of a Multipass instance with a static IP address and SSH connection from the host machine without extra manual steps.
 
 ## Full usage and options:
 ```
@@ -43,7 +43,7 @@ mp-launch -h
 Or read [mp-launch-usage](https://github.com/mkaapu/vm-utility/blob/main/multipass/mp-launch-usage).
 
 ### Example
-Create a new Ubuntu LTS VM with a static IP address and enable acccess to the VM instance from host machine through SSH:
+Create a new Ubuntu LTS VM with a static IP address and enable acccess to the VM instance from the host machine through SSH:
 ```
 mp-launch --name my-vm --ip 10.10.10.10
 ssh ubuntu@10.10.10.10
