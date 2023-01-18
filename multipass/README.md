@@ -5,6 +5,7 @@ Multipass installation is needed:
 ```
 sudo snap install multipass
 ```
+Note that root privileges (sudo) is needed to add a route from host to a VM instance when you want to set a static IP to the VM using either mp-ssh or mp-launch with -i option.
 
 ## Installation
 
