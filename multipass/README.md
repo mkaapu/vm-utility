@@ -3,13 +3,18 @@ These are Bash scripts to extend the usability, scripting and automation possibl
 
 Multipass installation is needed:
 ```
-$ sudo snap install multipass
+sudo snap install multipass
 ```
 
 ## Installation
-Just clone the project. 
-Keep the files in the same directory.
-You may want to add the directory to your PATH (or copy the directory to /usr/local/bin on Ubuntu) if you want make the tools more available.
+
+Use the simple setup script from the root of the repository to copy tools to /usr/bin/local where they are available for all users and other tools:
+So, to clone and install the tools:
+```
+git clone https://github.com/mkaapu/vm-utility.git
+sudo vm-utility/setup
+```
+Or you can just clone the project and add the multipass directory to your PATH.
 
 ## mp-ssh
 Enables SSH connection to a Multipass instance from host machine.
@@ -17,15 +22,15 @@ It can be used to set a static IP address to multipass instance.
 
 ### Full usage and options:
 ```
-./mp-ssh -h
+mp-ssh -h
 ```
 
 ### Example
 Set a static IP address to a multipass instance:
 ```
-$ multipass launch --name my-vm
-$ ./mp-ssh --ip 10.10.10.10 my-vm
-$ ssh ubuntu@10.10.10.10
+multipass launch --name my-vm
+mp-ssh --ip 10.10.10.10 my-vm
+ssh ubuntu@10.10.10.10
 ```
 
 ## mp-launch
@@ -33,15 +38,14 @@ Enables creation of Multipass instance with a static IP address and SSH connecti
 
 ## Full usage and options:
 ```
-./mp-launch -h
+mp-launch -h
 ```
-OR
-read [usage](https://github.com/mkaapu/vm-utility/blob/main/multipass/usage).
+Or read [mp-launch-usage](https://github.com/mkaapu/vm-utility/blob/main/multipass/mp-launch-usage).
 
 ### Example
 Create a new Ubuntu LTS VM with a static IP address and enable acccess to the VM instance from host machine through SSH:
 ```
-$ ./mp-launch --name my-vm --ip 10.10.10.10
-$ ssh ubuntu@10.10.10.10
+mp-launch --name my-vm --ip 10.10.10.10
+ssh ubuntu@10.10.10.10
 ```
 
