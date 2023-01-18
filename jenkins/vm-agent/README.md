@@ -7,7 +7,7 @@ Tool to create a Ubuntu LTS VM and prepare it as a [Jenkins](https://www.jenkins
 * Then it will create a Ubuntu LTS virtual machine with the settings specified by given commandline options.
 * It stores the public SSH key of the host to the authorized_keys file on the VM to allow passwordless login with public key authentication.
 * Static IP address is set to the VM (specified by the -v option).
-* The *.ssh/known_hosts* in user's home directory is appended with the VM's host key to able promptless SSH connection to the VM.
+* The *.ssh/known_hosts* in user's home directory is appended with the VM's host key to enable promptless SSH connection to the VM.
 * Java OpenJDK 17 will be installed on the VM to make it possible to launch Jenkins agents there.
 * Local port of the host (defaults to 2222 but can be specified with the -p option) is forwarded to the VM to enable SSH tunneling.
 * The SSH tunnel is enabled on startup with the host's crontab to enable launching Jenkins agents on the VM through the host's port.
@@ -39,5 +39,5 @@ ssh -p 2222 ubuntu@10.101.123.111
 If you connect through the local port you are prompted whether you want to add the VM to known hosts. To silence that for instance in scripts:
 ```
 sh-keyscan -H -t ed25519 -T 30 -p 3333 10.101.123.111 >> ~/.ssh/known_hosts
-ssh -p 2222 ubuntu@10.101.123.111
+ssh -p 3333 ubuntu@10.101.123.111
 ```
