@@ -20,10 +20,12 @@ The **multipass** directory contains bash scripts to extend the usability, scrip
 - Enables SSH connection to a Multipass instance from the host machine.
 - Can be used to set a static IP address to a multipass instance.
 - Provides a minimal interface suitable for use by other shell scripts and automation tools.
+- [Documentation](multipass#mp-ssh)
 
 ### mp-lauch
 - Enables creation of a Multipass instance with a static IP address and SSH connection from the host machine without extra manual steps.
 - Provides a minimal interface suitable for use by other shell scripts and automation tools.
+- [Documentation](multipass#mp-launch)
 
 ## Tools to setup Jenkins CI with VMs
 The *jenkins* directory contains bash scripts to help to setup [Jenkins](https://www.jenkins.io/) CI with controller isolation and distributed build agents based on virtual machines.
@@ -32,3 +34,4 @@ The *jenkins* directory contains bash scripts to help to setup [Jenkins](https:/
 - Creates a Ubuntu LTS VM and prepare it as a Jenkis agent.
 - Installs Java JDK 17 to the VM.
 - Enables logging into the VM using SSH tunnel through a local port of the host.
+- [Documentation](jenkins/vm-agent)
