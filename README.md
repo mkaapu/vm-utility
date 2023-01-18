@@ -14,7 +14,7 @@ sudo vm-utility/setup
 The setup tool can be executed more interactively with -i option which allows prompt before owerwriting any existing files.
 
 ## Tools to enhance Multipass
-The **multipass** directory contans bash scripts to extend the usability, scripting and automation possiblities of the [Multipass](https://multipass.run/) tool.
+The **multipass** directory contains bash scripts to extend the usability, scripting and automation possiblities of the [Multipass](https://multipass.run/) tool.
 
 ### mp-ssh
 - Enables SSH connection to a Multipass instance from the host machine.
