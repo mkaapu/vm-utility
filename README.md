@@ -1,7 +1,7 @@
 # vm-utility
 This repository is just a collection of VM launch and configuration utility tools for scripting and automation.
 Scripts are written in Bash and tested on Ubuntu Linux distributions.
-Note that some of the tools need to be exectuted either with superuser privilidges or as root user to complete some administrative commands.
+Note that some of the tools need to be exectuted either with superuser privileges or as root user to complete some administrative commands.
 
 ## Setup
 The setup script will copy vm-utility tools to */usr/bin/local* so they will be available for all users and other tools. 
@@ -17,12 +17,12 @@ The setup tool can be executed more interactively with -i option which allows pr
 The **multipass** directory contans bash scripts to extend the usability, scripting and automation possiblities of the [Multipass](https://multipass.run/) tool.
 
 ### mp-ssh
-- Enables SSH connection to a Multipass instance from host machine.
-- Can be used to set a static IP address to multipass instance.
+- Enables SSH connection to a Multipass instance from the host machine.
+- Can be used to set a static IP address to a multipass instance.
 - Provides a minimal interface suitable for use by other shell scripts and automation tools.
 
 ### mp-lauch
-- Enables creation of Multipass instance with a static IP address and SSH connection from host machine without extra manual steps.
+- Enables creation of a Multipass instance with a static IP address and SSH connection from the host machine without extra manual steps.
 - Provides a minimal interface suitable for use by other shell scripts and automation tools.
 
 ## Tools to setup Jenkins CI with VMs
