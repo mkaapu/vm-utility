@@ -9,8 +9,8 @@ NAME=primary
 CPUS=1
 DISK=5G
 MEM=1G
-VM_IP=10.10.20.11
-HOST_IP=10.10.10.11
+VM_IP=10.10.20.10
+HOST_IP=10.10.10.10
 PORT=2222
 
 #######################################
@@ -76,6 +76,7 @@ while true; do
   esac
 done
 
+echo
 echo "Installing Multipass tool.."
 sudo snap install multipass
 
@@ -108,9 +109,9 @@ multipass exec $NAME -- bash -c "
 echo
 echo "Creating SSH tunnel through local port: $PORT to the VM instance."
 SSH_TUNNEL="ssh -f -N ubuntu@${VM_IP} -L ${HOST_IP}:${PORT}:${VM_IP}:22"
-$(echo $SSH_TUNNEL)
+eval $SSH_TUNNEL
 
-if ! crontab -l | grep "@reboot $SSH_TUNNEL" >/dev/null; then
+if ! crontab -l 2>/dev/null | grep "@reboot $SSH_TUNNEL" >/dev/null; then
   echo
   echo "Adding SSH tunneling to crontab so it is available on startup."
   crontab -l 2>/dev/null | { cat; echo "@reboot $SSH_TUNNEL"; } | crontab -
