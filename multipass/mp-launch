@@ -98,8 +98,11 @@ ERRORS=()
 short_usage() {
   echo "Usage: $0 [options] [[<remote:>]<image> | <url>]"
   echo
-  echo "Create and start a new virtual machine (VM) instance using multipass tool"
+  echo "Create and start a new virtual machine (VM) instance using Multipass tool"
   echo "and enable acccess to the VM instance from host machine through SSH."
+  echo
+  echo "Multipass installation is needed:"
+  echo "$ snap install multipass"
   echo
   echo "Example of creating a new Ubuntu LTS VM with a static IP address:"
   echo "$ $0 --name my-vm --ip 10.10.10.10"

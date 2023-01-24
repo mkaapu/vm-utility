@@ -1,7 +1,10 @@
 Usage: mp-launch [options] [[<remote:>]<image> | <url>]
 
-Create and start a new virtual machine (VM) instance using multipass tool
+Create and start a new virtual machine (VM) instance using Multipass tool
 and enable acccess to the VM instance from host machine through SSH.
+
+Multipass installation is needed:
+$ snap install multipass
 
 Example of creating a new virtual machine with a static IP address:
 $ ./mp-launch --name my-vm --ip 10.10.10.10
