@@ -34,7 +34,7 @@ ssh ubuntu@10.100.123.101
 ```
 of through the local port of the host:
 ```
-ssh -p 2222 ubuntu@10.101.123.111
+ssh -p 3333 ubuntu@10.101.123.111
 ```
 If you connect through the local port you are prompted whether you want to add the VM to known hosts. To silence that for instance in scripts:
 ```
