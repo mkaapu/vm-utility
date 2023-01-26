@@ -32,7 +32,7 @@ You can log directly in to the VM launched in the above example using SSH:
 ```
 ssh ubuntu@10.100.123.101
 ```
-of through the local port of the host:
+or through the local port of the host:
 ```
 ssh -p 3333 ubuntu@10.101.123.111
 ```
