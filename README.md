@@ -35,3 +35,14 @@ The *jenkins* directory contains bash scripts to help to setup [Jenkins](https:/
 - Installs Java JDK 17 to the VM.
 - Enables logging into the VM using SSH tunnel through a local port of the host.
 - [Documentation](jenkins/vm-agent)
+
+## Tools to enable remote login with SSH
+The **ssh** directory contains bash scripts to enable automated remote login and command-line execution of SSH application.
+
+### make-ssh-tunnel
+- Creates a persistent SSH tunnel between servers as systemd service.
+- [Documentation](ssh/make-ssh-tunnel)
+
+### rm-ssh-tunnel
+- Removes a SSH tunnel and systemd service created by the [make-ssh-tunnel](#make-ssh-tunnel)
+- [Documentation](ssh/rm-ssh-tunnel)
