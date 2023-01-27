@@ -84,5 +84,7 @@ sudo cp -v $INTERACTIVE \
   $UTILITY_DIR/multipass/mp-launch \
   $UTILITY_DIR/multipass/mp-launch-usage \
   $UTILITY_DIR/jenkins/vm-agent/launch-vm-agent \
+  $UTILITY_DIR/ssh/make-ssh-tunnel \
+  $UTILITY_DIR/ssh/ssh-tunnel-persistent.service \
   $DESTINATION.
 echo "vm-utility installed."

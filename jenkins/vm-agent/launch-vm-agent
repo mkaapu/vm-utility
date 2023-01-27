@@ -108,14 +108,7 @@ multipass exec $NAME -- bash -c "
 
 echo
 echo "Creating SSH tunnel through local port: $PORT to the VM instance."
-SSH_TUNNEL=( ssh -f -N ubuntu@${VM_IP} -L ${HOST_IP}:${PORT}:${VM_IP}:22 )
-"${SSH_TUNNEL[@]}"
-
-if ! crontab -l 2>/dev/null | grep '@reboot "${SSH_TUNNEL[@]}"' >/dev/null; then
-  echo
-  echo "Adding SSH tunneling to crontab so it is available on startup."
-  crontab -l 2>/dev/null | { cat; echo "@reboot ${SSH_TUNNEL[@]}"; } | crontab -
-fi
+make-ssh-tunnel -i $HOST_IP -s $VM_IP -p $PORT $NAME
 
 echo
 echo "Append a public key to the authorized_keys on the VM instance"
