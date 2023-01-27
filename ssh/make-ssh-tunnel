@@ -85,7 +85,7 @@ usage() {
 # Handling command line arguments
 #######################################
 if ! OPTS="$(getopt \
-  --longoptions help,ip:,server:user:,port:,to-port: \
+  --longoptions help,ip:,server:,user:,port:,to-port: \
   --options hi:s:u:p:t: \
   --name "$(basename "$0")" \
   -- "$@"
