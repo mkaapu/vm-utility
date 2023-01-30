@@ -9,8 +9,8 @@ NAME=primary
 CPUS=1
 DISK=5G
 MEM=1G
-VM_IP=10.10.20.10
-HOST_IP=10.10.10.10
+VM_IP=10.10.10.10
+HOST_IP=0.0.0.0
 PORT=2222
 
 #######################################
@@ -33,18 +33,21 @@ usage() {
   echo
   echo "Options:"
   echo "  -h, --help            Displays help on commandline options"
-  echo "  -n, --name <name>	VM instance name"
-  echo "  -c, --cpus <cpus>	Number of CVPUs to allocate"
-  echo "			Default: 1"
-  echo "  -d, --disk <disk>	Disk space to allocate"
-  echo "			Default: 5G"
-  echo "  -m, --mem <mem>	Amount of memeory to allocate"
-  echo "			Default: 1G"
-  echo "  -v, --vm-ip <ip>	IP address of VM instance"
-  echo "  -i, --host-ip <ip>	Local IP of the host"
-  echo "  -p, --port <port>	Local port forwarded to the VM instance"
-  echo "			to create a SSH tunnel"
-  echo "			Default: 2222"
+  echo "  -n, --name <name>     VM instance name"
+  echo "  -c, --cpus <cpus>     Number of CPUs to allocate"
+  echo "                        Default: 1"
+  echo "  -d, --disk <disk>     Disk space to allocate"
+  echo "                        Default: 5G"
+  echo "  -m, --mem <mem>       Amount of memeory to allocate"
+  echo "                        Default: 1G"
+  echo "  -v, --vm-ip <ip>      Static IP adress for the VM"
+  echo "                        Default: 10.10.10.10"
+  echo "  -i, --host-ip <ip>    Bind address of the local host"
+  echo "                        Default: 0.0.0.0 (makes local port"
+  echo "                        available on all interfaces)"
+  echo "  -p, --port <port>     Local port forwarded to the VM instance"
+  echo "                        to create a SSH tunnel"
+  echo "                        Default: 2222"
 }
 
 #######################################
@@ -75,6 +78,13 @@ while true; do
     *) echo "DEBUG: No implementation for the option $1" ; exit 1 ;;
   esac
 done
+ARGS=("$@")
+ARGCOUNT=${#ARGS[@]}
+if [ "${#ARGS[@]}" -ne "0" ]; then
+  echo "Unexpected arguments supplied."
+  usage
+  exit 1
+fi
 
 echo
 echo "Installing Multipass tool.."
