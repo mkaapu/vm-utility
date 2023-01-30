@@ -30,9 +30,9 @@ make-ssh-tunnel -h
 ```
 make-ssh-tunnel --ip 10.10.10.10 --server 11.11.11.11 --user ubuntu --port 3333 --to-port 333 vmserver
 ```
-* Creates a persistent SSH tunnel from local port 2222 on host with IP address 10.10.10.10 to port 222 on external server with IP address 11.11.11.11.
-* Writes a systemd user unit file with the path *~/.config/systemd/user/ssh-tunnel-from-2222-to-vmserver.service*
-* Starts the *ssh-tunnel-from-2222-to-vmserver.service* and enables automatic start-up of the service.
+* Creates a persistent SSH tunnel from local port 3333 on host with IP address 10.10.10.10 to port 333 on external server with IP address 11.11.11.11.
+* Writes a systemd user unit file with the path *~/.config/systemd/user/ssh-tunnel-from-3333-to-vmserver.service*
+* Starts the *ssh-tunnel-from-3333-to-vmserver.service* and enables automatic start-up of the service.
 
 ## rm-ssh-tunnel
 Remove a persistent SSH tunnel between servers created by the [make-ssh-tunnel](#make-ssh-tunnel).
