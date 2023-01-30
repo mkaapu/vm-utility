@@ -108,7 +108,7 @@ multipass exec $NAME -- bash -c "
 
 echo
 echo "Creating SSH tunnel through local port: $PORT to the VM instance."
-make-ssh-tunnel -i $HOST_IP -s $VM_IP -p $PORT $NAME
+make-ssh-tunnel -b $HOST_IP -i $VM_IP -p $PORT $NAME
 
 echo
 echo "Append a public key to the authorized_keys on the VM instance"

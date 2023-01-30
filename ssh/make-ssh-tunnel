@@ -28,7 +28,7 @@ DIR=$(dirname "$0")
 NAME=external
 
 # Local IP address
-IP=10.10.10.10
+IP=0.0.0.0
 
 # IP address of the external server/VM/etc. to connect with the tunnel
 TO_IP=10.10.20.10
@@ -59,21 +59,24 @@ usage() {
   echo
   echo "Options:"
   echo "  -h, --help            Displays help on commandline options"
-  echo "  -i, --ip <ip>	        Local IP address"
-  echo "			With value 0.0.0.0 it would be binding"
-  echo "			on all interfaces on local server"
-  echo "  -s, --server <ip>	IP address of the external server"
-  echo "  -u, --user <user>	User in the external server"
-  echo "  -p, --port <port>	Local port which is forwarded to the"
-  echo "			external server to create the tunnel"
-  echo "			Default: 2222"
+  echo "  -b, --bind <ip>       Bind address, like local IP address"
+  echo "                        (connection bound to specific address),"
+  echo "                        127.0.0.01 (bound for local use only),"
+  echo "                        0.0.0.0 (available from all interfaces)"
+  echo "                        Default: 0.0.0.0"
+  echo "  -i, --ip <ip>         IP address of the external server"
+  echo "  -u, --user <user>     User in the external server"
+  echo "                        Default: ubuntu"
+  echo "  -p, --port <port>     Local port which is forwarded to the"
+  echo "                        external server to create the tunnel"
+  echo "                        Default: 2222"
   echo "  -t, --to-port <port>  Port on the external server"
-  echo "			Default: 22"
+  echo "                        Default: 22"
   echo
   echo "Arguments:"
-  echo "  name			Name and identifier for the tunnel."
-  echo "			It will be a part of the name for the"
-  echo "			created service:"
+  echo "  name                  Name and identifier for the tunnel."
+  echo "                        It will be a part of the name for the"
+  echo "                        created service:"
   echo "                        ssh-tunnel-from-<port>-to-<name>.service"
 }
 
@@ -85,8 +88,8 @@ usage() {
 # Handling command line arguments
 #######################################
 if ! OPTS="$(getopt \
-  --longoptions help,ip:,server:,user:,port:,to-port: \
-  --options hi:s:u:p:t: \
+  --longoptions help,bind:,ip:,user:,port:,to-port: \
+  --options hb:i:u:p:t: \
   --name "$(basename "$0")" \
   -- "$@"
 )"; then
@@ -97,8 +100,8 @@ eval set -- "$OPTS"
 while true; do
   case "$1" in
     --help|-h) usage; exit ;;
-    --ip|-i) IP="$2"; shift 2 ;;
-    --server|-s) TO_IP="$2"; shift 2 ;;
+    --bind|-b) IP="$2"; shift 2 ;;
+    --ip|-i) TO_IP="$2"; shift 2 ;;
     --port|-p) PORT="$2"; shift 2 ;;
     --to-port|-t) TO_PORT="$2"; shift 2 ;;
     --user|-u) LOGIN="$2"; shift 2 ;;
