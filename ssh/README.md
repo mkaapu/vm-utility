@@ -28,7 +28,7 @@ make-ssh-tunnel -h
 
 ### Example
 ```
-make-ssh-tunnel --ip 10.10.10.10 --server 11.11.11.11 --user ubuntu --port 3333 --to-port 333 vmserver
+make-ssh-tunnel --bind 10.10.10.10 --port 3333 --ip 11.11.11.11 --to-port 333 --user ubuntu vmserver
 ```
 * Creates a persistent SSH tunnel from local port 3333 on host with IP address 10.10.10.10 to port 333 on external server with IP address 11.11.11.11.
 * Writes a systemd user unit file with the path *~/.config/systemd/user/ssh-tunnel-from-3333-to-vmserver.service*
