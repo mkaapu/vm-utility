@@ -119,3 +119,12 @@ sudo systemctl enable containerd.service
 echo
 echo "Adding $USER to the docker group.."
 sudo usermod -aG docker $DOCKER_USER
+
+echo
+echo "The '$DOCKER_USER' user should log out and log back in \
+to re-evaluate docker group membership."
+echo "Or if Docker setup was done in a virtual machine, \
+it might need to be restarted."
+
+echo
+echo "Docker setup done."
