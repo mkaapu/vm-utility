@@ -36,7 +36,7 @@ make-ssh-tunnel --bind 10.10.10.10 --port 3333 --ip 11.11.11.11 --to-port 333 --
 
 ## rm-ssh-tunnel
 Removes a persistent SSH tunnel between servers created by the [make-ssh-tunnel](#make-ssh-tunnel).
-It stops and removes the systmed service and related user unit files.
+It stops and removes the systemd service and related user unit files.
 
 To remove the SSH tunnel and the service created by the above [example](#example):
 ```
