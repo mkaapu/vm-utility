@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+#
+# Installs Docker Engine and prepares it for use.
+#
+# Reference: https://docs.docker.com/engine/install/ubuntu/
+#
+# Check the usage() function below for more usage options
+
+set -e
+
+#######################################
+# DEFAULT VALUES
+#######################################
+
+DIR=$(dirname "$0")
+DOCKER_USER=$USER
+CONFIG=$DIR/daemon.json
+
+#######################################
+# USAGE
+#######################################
+
+usage() {
+  echo "Usage: $0 [options]"
+  echo
+  echo "Installs Docker Engine on Ubuntu."
+  echo "Docker is configured to start on boot with systemd."
+  echo
+  echo "Options:"
+  echo "  -h, --help                    Displays help on commandline options"
+  echo "  -c, --config <config-file>    Daemon configuration file allows"
+  echo "                                you to set any configuration option"
+  echo "                                for the daemon in a JSON format."
+  echo "                                Default: daemon.json (if provided)"
+  echo "                                The provided default json is used to"
+  echo "                                turn on log rotation using the"
+  echo "                                json-file logging driver."
+  echo "  -u, --user <user>             User added to the docker group"
+  echo "                                instead of the current user"
+  echo "                                Default: $USER"
+}
+
+#######################################
+# Handling command line arguments
+#######################################
+
+if ! OPTS="$(getopt \
+  --longoptions help,user:,config: \
+  --options hu:c: \
+  --name "$(basename "$0")" \
+  -- "$@"
+)"; then
+  usage
+  exit 1
+fi
+eval set -- "$OPTS"
+while true; do
+  case "$1" in
+    --help|-h) usage; exit ;;
+    --user|-u) DOCKER_USER="$2"; shift 2 ;;
+    --config|-c) CONFIG="$2"; shift 2 ;;
+    --) shift; break ;;
+    *) echo "DEBUG: No implementation for the option $1" ; exit 1 ;;
+  esac
+done
+ARGS=("$@")
+ARGCOUNT=${#ARGS[@]}
+if [ "${#ARGS[@]}" -ne "0" ]; then
+  echo "Unexpected arguments supplied."
+  usage
+  exit 1
+fi
+
+#######################################
+# Main Execution
+#######################################
+
+echo
+echo "Setting up the Docker repository.."
+sudo apt-get update
+sudo apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo \
+"deb [arch=$(dpkg --print-architecture) \
+signed-by=/etc/apt/keyrings/docker.gpg] \
+https://download.docker.com/linux/ubuntu \
+$(lsb_release -cs) stable" | \
+sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+echo
+echo "Installing Docker Engine.."
+sudo apt-get update
+sudo apt-get install -y --no-install-recommends \
+    docker-ce \
+    docker-ce-cli \
+    containerd.io \
+    docker-compose-plugin
+
+echo
+if [ -a $CONFIG ]; then
+  echo "Configuration options set for the daemon.."
+  sudo cp $CONFIG /etc/docker/.
+else
+  echo "No daemon configuation file found: $CONFIG"
+  echo "No extra configuration options set for the daemon."
+fi
+
+echo
+echo "Configuring Docker to start on boot with systemd.."
+sudo systemctl enable docker.service
+sudo systemctl enable containerd.service
+
+echo
+echo "Adding $USER to the docker group.."
+sudo usermod -aG docker $DOCKER_USER
