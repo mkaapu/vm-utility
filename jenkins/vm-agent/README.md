@@ -2,7 +2,7 @@
 Tool to create a Ubuntu LTS VM and prepare it as a [Jenkins](https://www.jenkins.io/) agent.
 
 ## What it does
-* **launc-vm-agent** utility installs [Multipass](https://multipass.run/) tool if it is not installed.
+* **launch-vm-agent** utility installs [Multipass](https://multipass.run/) tool if it is not installed.
 * It generates a new SSH key if no existing key (ed25519) is found from user's home directory (*.ssh/id_ed25519*).
 * It creates a Ubuntu LTS virtual machine with the settings specified by given commandline options.
 * It stores the public SSH key of the host to the authorized_keys file on the VM to allow passwordless login with public key authentication.
@@ -25,7 +25,7 @@ With this example:
 * New Ubuntu LTS VM will be launched with the name 'vm-agent'.
 * 2 CPUs, 2G of memory and 10G of disk space will be allocated to the launched VM.
 * VM will have static IP: 10.100.123.101
-* The host (where you execute the above command) should have an IP address: 10.101.123.111
+* The host (where you execute the above command) should have an IP address: 10.101.123.111 (binding the local port to that address)
 * You should be able to log in to the VM through the local port of the host: 3333
 
 You can log directly in to the VM launched in the above example using SSH:

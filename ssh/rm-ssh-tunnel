@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+#
+# Removes a persistent SSH tunnel created by the make-ssh-tunnel.
+#
+# Check the usage() function below for more usage options
+
+#######################################
+# Shell options
+#######################################
+set -e
+
+#######################################
+# DEFAULT VALUES
+#######################################
+
+# name for tunnel/server/VM/etc. to identify the systemd service
+NAME=external
+
+# Local port which is forwarded to the external server/VM/etc.
+PORT=2222
+
+#######################################
+# USAGE
+#######################################
+
+usage() {
+  echo "Usage: $0 [options] <name>"
+  echo
+  echo "Removes a persitent SSH tunnel created by the make-ssh-tunnel"
+  echo
+  echo "Removes a systemd user unit file which enabled persistent SSH"
+  echo "tunnel from a local port to a port on an external server."
+  echo "Stops and disables the service."
+  echo
+  echo "Options:"
+  echo "  -h, --help            Displays help on commandline options"
+  echo "  -p, --port <port>	Local port which is forwarded to the"
+  echo "			external server to create the tunnel"
+  echo "			Default: 2222"
+  echo
+  echo "Arguments:"
+  echo "  name			Name and identifier for the tunnel."
+  echo "			It will be a part of the service name:"
+  echo "                        ssh-tunnel-from-<port>-to-<name>.service"
+}
+
+#######################################
+# EXECUTION
+#######################################
+
+#######################################
+# Handling command line arguments
+#######################################
+if ! OPTS="$(getopt \
+  --longoptions help,port: \
+  --options hp: \
+  --name "$(basename "$0")" \
+  -- "$@"
+)"; then
+  usage
+  exit 1
+fi
+eval set -- "$OPTS"
+while true; do
+  case "$1" in
+    --help|-h) usage; exit ;;
+    --port|-p) PORT="$2"; shift 2 ;;
+    --) shift; break ;;
+    *) echo "DEBUG: No implementation for the option $1" ; exit 1 ;;
+  esac
+done
+ARGS=("$@")
+ARGCOUNT=${#ARGS[@]}
+if [ "$ARGCOUNT" -eq "1" ]; then
+  NAME="${ARGS[0]}"
+elif [ "$ARGCOUNT" -gt "1" ]; then
+  echo "Too many arguments supplied."
+  usage
+  exit 1
+fi
+
+#######################################
+# Main Execution
+#######################################
+
+# Name of the service to be created to establish the persistent tunnel
+SERVICE_NAME=ssh-tunnel-from-$PORT-to-$NAME.service
+# Path to the user unit
+UNIT_FILE=~/.config/systemd/user/$SERVICE_NAME
+
+echo "Stopping the service .."
+systemctl --user stop $SERVICE_NAME
+echo "Disabling the service .."
+systemctl --user disable $SERVICE_NAME
+echo "Removing the systemd user unit from $UNIT_FILE .."
+rm $UNIT_FILE
+echo "Unit $SERVICE_NAME removed."
+

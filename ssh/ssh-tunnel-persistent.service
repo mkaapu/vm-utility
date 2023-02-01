@@ -1,0 +1,13 @@
+[Unit]
+Description=Persistent SSH tunnel from port LOCAL to port PORT on SERVER
+After=network.target
+
+[Service]
+Restart=always
+RestartSec=3
+ExecStart=/usr/bin/ssh -NTC -o ServerAliveInterval=60 -o\
+ ExitOnForwardFailure=yes -L HOST:LOCAL:SERVER:PORT\
+ USER@SERVER
+
+[Install]
+WantedBy=default.target
