@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Remves a persistent SSH tunnel created by the make-ssh-tunnel.
+# Removes a persistent SSH tunnel created by the make-ssh-tunnel.
 #
 # Check the usage() function below for more usage options
 
