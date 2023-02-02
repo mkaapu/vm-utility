@@ -36,7 +36,7 @@ usage() {
   echo "                                turn on log rotation using the"
   echo "                                json-file logging driver."
   echo "  -u, --user <user>             User added to the docker group"
-  echo "                                instead of the current user"
+  echo "                                (instead of the current user)"
   echo "                                Default: $USER"
 }
 
