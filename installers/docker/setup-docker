@@ -105,6 +105,7 @@ sudo apt-get install -y --no-install-recommends \
 echo
 if [ -a $CONFIG ]; then
   echo "Configuration options set for the daemon.."
+  mkdir -p /etc/docker/
   sudo cp $CONFIG /etc/docker/.
 else
   echo "No daemon configuation file found: $CONFIG"
