@@ -4,7 +4,7 @@
 #
 # Installs Multipass tool if not already installed.
 # Launches a new Multipass instance using mp-launch tool.
-# On launched instance, creates a workspace directory
+# On the launched instance, creates a workspace directory
 # and clones the vm-utility repository there.
 # With --branch option, checkouts a new local branch.
 # With --track option, sets a remote-tracking branch.
@@ -150,7 +150,7 @@ EXEC_ARGS+=( "$MAIL" )
 EXEC_ARGS+=( "$EDIT" )
 EXEC_ARGS+=( "$BRANCH" )
 EXEC_ARGS+=( "$REMOTE" )
-multipass exec $VM_NAME -- bash -c ' # Following run on the VM
+multipass exec $VM_NAME -- bash -c ' # Run on the VM
 
 # VM environment
 VM_NAME=$0
@@ -160,7 +160,7 @@ EDIT=$3
 BRANCH=$4
 REMOTE=$5
 CHECKOUT=( "git checkout" )
-GIT_SETUP=( "development/config-git" )
+GIT_SETUP=( "config-git" )
 WORKSPACE=~/workspace
 
 mkdir $WORKSPACE
@@ -191,7 +191,7 @@ echo "Installing vm-utility.."
 
 echo
 echo "Customizing Git environment.."
-development/config-nano
+config-nano
 if [ $MAIL ]; then
   GIT_SETUP+=( "-a $MAIL" )
 fi
