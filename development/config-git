@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+NAME=
+MAIL=
+EDIT=
+
+usage() {
+  echo "Usage: $0 [options]"
+  echo
+  echo "Sets git configuration for a developer."
+  echo
+  echo "Example:"
+  echo "$ $0 --email spiderman@gmail.com --editor nano \"Peter Parker\""
+  echo
+  echo "Options:"
+  echo "  -h, --help                    Displays help on commandline options"
+  echo "  -a, --email <user.email>      Your email address"
+  echo "  -e, --editor <core.editor>    Your text editor"
+  echo "Arguments:"
+  echo "  \"User Name\"                   Your name"
+}
+
+if ! OPTS="$(getopt \
+  --longoptions help,name:,email:,editor: \
+  --options hn:a:e: \
+  --name "$(basename "$0")" \
+  -- "$@"
+)"; then
+  usage
+  exit 1
+fi
+eval set -- "$OPTS"
+while true; do
+  case "$1" in
+    --help|-h) usage; exit ;;
+    --email|-a) MAIL="$2"; shift 2 ;;
+    --editor|-e) EDIT="$2"; shift 2 ;;
+    --) shift; break ;;
+    *) echo "DEBUG: No implementation for the option $1" ; exit 1 ;;
+  esac
+done
+ARGS=("$@")
+ARGCOUNT=${#ARGS[@]}
+if [ "${ARGCOUNT}" -eq "0" ]; then
+  echo "$0: No arguments supplied."
+elif [ "${ARGCOUNT}" -gt "1" ]; then
+  echo "$0: Unexpected arguments supplied."
+  usage
+  exit 1
+fi
+
+git config --global user.name "$ARGS"
+if [ "$MAIL" ]; then
+  git config --global user.email $MAIL
+fi
+if [ "$EDIT" ]; then
+  git config --global core.editor $EDIT
+fi
+git config \
+  --global url.ssh://git@github.com/.insteadOf https://github.com/

@@ -87,5 +87,10 @@ sudo cp -v $INTERACTIVE \
   $UTILITY_DIR/ssh/make-ssh-tunnel \
   $UTILITY_DIR/ssh/rm-ssh-tunnel \
   $UTILITY_DIR/ssh/ssh-tunnel-persistent.service \
+  $UTILITY_DIR/installers/multipass/setup-multipass \
+  $UTILITY_DIR/development/config-nano \
+  $UTILITY_DIR/development/config-git \
+  $UTILITY_DIR/development/dev-vm \
+  $UTILITY_DIR/development/purge-vm \
   $DESTINATION.
 echo "vm-utility installed."

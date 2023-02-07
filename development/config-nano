@@ -1,0 +1,2 @@
+echo set constantshow > ~/.nanorc
+echo set guidestripe 72 >> ~/.nanorc

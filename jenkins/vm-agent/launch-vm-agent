@@ -86,23 +86,9 @@ if [ "${#ARGS[@]}" -ne "0" ]; then
   exit 1
 fi
 
-echo
-echo "Installing Multipass tool.."
-sudo snap install multipass
-
-echo
-echo "Waiting while multipassd service has been started.."
-echo "If Multipass is not starting up it can be restarted manually:"
-echo "$ sudo snap restart multipass.multipassd"
-while true; do
-  if pgrep -x "multipassd" > /dev/null; then
-    if [ -a /var/snap/multipass/common/multipass_socket ]; then
-      echo
-      echo Multipass is running.
-      break
-    fi
-  fi
-done
+# Install multipass if not installed
+# and wait that multipassd is running.
+setup-multipass
 
 echo
 echo "Creating Ubuntu LTS VM instance: $NAME with a static IP: $VM_IP"
