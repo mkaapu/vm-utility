@@ -199,7 +199,8 @@ if [ $EDIT ]; then
   GIT_SETUP+=( "-e $EDIT" )
 fi
 GIT_SETUP+=( "\"$NAME\"" )
-${GIT_SETUP[@]}
+eval "${GIT_SETUP[@]}"
+git config --list --show-origin
 
 echo
 echo "Generating a new SSH key.."
