@@ -4,14 +4,15 @@
 #
 # Installs Multipass tool if not already installed.
 # Launches a new Multipass instance using mp-launch tool.
-# On the launched instance, creates a workspace directory
-# and clones the vm-utility repository there.
-# With --branch option, checkouts a new local branch.
-# With --track option, sets a remote-tracking branch.
-# Sets up your identity (--name and --email options)
+# On the launched instance:
+# - Creates a workspace directory and clones the vm-utility there.
+# - Sets up vm-utility and Multipass tools in the VM.
+# - With --branch option, checkouts a new local branch.
+# - With --track option, sets a remote-tracking branch.
+# - Sets up your identity (--name and --email options)
 # and configures the default text editor (--editor option) for Git.
-# Creates a simple initial configuration file for nano.
-# Generates a new SSH key on the instance and prints the public key.
+# - Creates a simple initial configuration file for nano.
+# - Generates a new SSH key on the instance and prints the public key.
 #
 set -e
 
@@ -188,6 +189,10 @@ fi
 echo
 echo "Installing vm-utility.."
 ./setup
+
+echo
+echo "Installing multipass.."
+setup-multipass
 
 echo
 echo "Customizing Git environment.."
