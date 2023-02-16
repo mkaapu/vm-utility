@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+#
+# Deletes and purges multipass instance.
+# Removes any known host keys with IP addresses of deleted instances.
+
+set -e
+
+. mp-calls
+
+usage() {
+  echo "Usage: $0 [vm-name]..."
+  echo
+  echo "Deletes and purges multipass instances."
+  echo
+  echo "Removes also any stored known host keys with IP addresses"
+  echo "of the instances from .ssh/known_hosts."
+}
+
+# arguments
+instances=($@)
+if [ "${#instances[@]}" -eq "0" ]; then
+  usage
+  exit
+fi
+
+# remove instances from known hosts
+for i in "${instances[@]}"; do
+  ip=$(mp-info-ip $i)
+  if [ $ip ]; then
+    ssh-keygen -R $ip
+  fi
+done
+
+# delete and purge instances
+multipass delete ${instances[@]}
+multipass purge
+multipass list

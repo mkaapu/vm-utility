@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+#
+# Installs Multipass and waits while multipassd service is running.
+#
+# Reference: https://multipass.run/install
+
+set -e
+
+echo
+echo "Installing Multipass tool.."
+sudo snap install multipass
+
+echo
+echo "Waiting while multipassd service has been started.."
+echo "If Multipass is not starting up it can be restarted manually:"
+echo "$ sudo snap restart multipass.multipassd"
+while true; do
+  if pgrep -x "multipassd" > /dev/null; then
+    if [ -a /var/snap/multipass/common/multipass_socket ]; then
+      echo
+      echo Multipass is running.
+      break
+    fi
+  fi
+done
