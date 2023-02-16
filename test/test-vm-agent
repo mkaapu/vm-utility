@@ -10,7 +10,6 @@ set -e
 HOST_VM="test-vm-agent"
 GUEST_VM="vm-agent"
 CURRENT_BRANCH=$(git branch --show-current)
-echo $CURRENT_BRANCH
 
 echo "Setting up the test environment.."
 echo "Copying vm-utility tools to /usr/local/bin .."
