@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+#
+# Tests vm-utility tools
+#
+# Run this test from the root of the repository:
+# $ test/test-vm-agent
+
+set -e
+
+HOST_VM="test-vm-agent"
+GUEST_VM="vm-agent"
+CURRENT_BRANCH=$(git branch --show-current)
+echo $CURRENT_BRANCH
+
+echo "Setting up the test environment.."
+echo "Copying vm-utility tools to /usr/local/bin .."
+./setup
+. mp-calls
+
+echo "Cleaning the test environment.."
+ssh-keygen -R "[10.10.10.10]:2222"
+host_found=$(mp-info-ip $HOST_VM)
+if [ $host_found ]; then
+  echo "$HOST_VM found."
+  multipass exec $HOST_VM -- bash -c '
+    . mp-calls
+    guest_found=$(mp-info-ip $0)
+    if [ $guest_found ]; then
+      echo "$0 found."
+      purge-vm $0
+      echo "$0 purged."
+    else
+      echo "$0 not found."
+    fi
+  ' $GUEST_VM
+  purge-vm $HOST_VM
+  echo "$HOST_VM purged."
+else
+  echo "$HOST_VM not found."
+fi
+echo "Test environment clean."
+
+echo
+echo "1. Testing the dev-vm tool."
+echo "Creating a test host VM:$HOST_VM with the IP:10.10.10.10 .."
+dev-vm \
+  -n "John Doe" \
+  -a johndoe@example.com \
+  -i 10.10.10.10 \
+  -t origin/$CURRENT_BRANCH \
+  $HOST_VM
+echo "1. VM:$HOST_VM creation: SUCCESS!"
+
+echo
+echo "2. Testing the launch-vm-agent tool."
+echo "Creating a guest VM:$GUEST_VM in the VM:$HOST_VM with the tool .."
+EXEC_ARGS+=( "$GUEST_VM" )
+EXEC_ARGS+=( "$CURRENT_BRANCH" )
+EXEC_ARGS+=( "$(cat ~/.ssh/id_ed25519.pub)" )
+multipass exec $HOST_VM -- bash -c '
+
+  GUEST_VM=$0
+  BRANCH=$1
+  KEY="$2"
+  set -e
+  launch-vm-agent \
+    --name $GUEST_VM \
+    --cpus 2 \
+    --mem 2G \
+    --disk 10G \
+    --host-ip 10.10.10.10 \
+    --vm-ip 10.10.20.10
+  echo "2. VM:$GUEST_VM creation: SUCCESS!"
+
+  echo
+  echo "3. Testing the setup-docker script"
+  echo "Install Docker inside the VM:$GUEST_VM using the script"
+  multipass exec $GUEST_VM -- bash -c "
+    set -e
+    mkdir -p workspace
+    cd workspace
+    git clone https://github.com/mkaapu/vm-utility.git
+    cd vm-utility
+    git checkout -t origin/$BRANCH
+    installers/docker/setup-docker
+  " $BRANCH
+
+  multipass exec $GUEST_VM -- docker run hello-world
+  echo "Docker commands can run without sudo on the VM:$GUEST_VM"
+  echo "3. VM:$GUEST_VM Docker setup: SUCCESS!"
+
+  multipass exec $GUEST_VM -- bash -c "
+    echo $KEY >> ~/.ssh/authorized_keys
+  " $KEY
+  echo
+  echo "Public key of the current user authorized on the VM:$GUEST_VM"
+
+' "${EXEC_ARGS[@]}"
+
+echo
+echo "Adding a known host key of the VM:$GUEST_VM to the current user.."
+ssh-keyscan \
+  -H \
+  -t ed25519 \
+  -T 30 \
+  -p 2222 \
+  10.10.10.10 >> ~/.ssh/known_hosts
+
+echo
+echo "You should be able to connect to the VM:$HOST_VM:"
+echo "$ ssh ubuntu@10.10.10.10"
+echo
+echo "You should be able to connect to the VM:$GUEST_VM:"
+echo "$ ssh -p 2222 ubuntu@10.10.10.10"
