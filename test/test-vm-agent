@@ -9,7 +9,8 @@ set -e
 
 HOST_VM="test-vm-agent"
 GUEST_VM="vm-agent"
-CURRENT_BRANCH=$(git branch --show-current)
+format="--format=%(upstream:short)"
+REMOTE=$(git for-each-ref $format "$(git symbolic-ref -q HEAD)")
 
 echo "Setting up the test environment.."
 echo "Copying vm-utility tools to /usr/local/bin .."
@@ -42,24 +43,27 @@ echo "Test environment clean."
 echo
 echo "1. Testing the dev-vm tool."
 echo "Creating a test host VM:$HOST_VM with the IP:10.10.10.10 .."
-dev-vm \
-  -n "John Doe" \
-  -a johndoe@example.com \
-  -i 10.10.10.10 \
-  -t origin/$CURRENT_BRANCH \
-  $HOST_VM
+DEV_VM=( "dev-vm"  )
+DEV_VM+=( "-n \"John Doe\"" )
+DEV_VM+=( "-a johndoe@example.com" )
+DEV_VM+=( "-i 10.10.10.10" )
+if [ $REMOTE ] && [ "$REMOTE" != "origin/main" ]; then
+  DEV_VM+=( "-t $REMOTE" )
+fi
+DEV_VM+=( "$HOST_VM" )
+eval "${DEV_VM[@]}"
 echo "1. VM:$HOST_VM creation: SUCCESS!"
 
 echo
 echo "2. Testing the launch-vm-agent tool."
 echo "Creating a guest VM:$GUEST_VM in the VM:$HOST_VM with the tool .."
 EXEC_ARGS+=( "$GUEST_VM" )
-EXEC_ARGS+=( "$CURRENT_BRANCH" )
+EXEC_ARGS+=( "$REMOTE" )
 EXEC_ARGS+=( "$(cat ~/.ssh/id_ed25519.pub)" )
 multipass exec $HOST_VM -- bash -c '
 
   GUEST_VM=$0
-  BRANCH=$1
+  REMOTE=$1
   KEY="$2"
   set -e
   launch-vm-agent \
@@ -80,9 +84,11 @@ multipass exec $HOST_VM -- bash -c '
     cd workspace
     git clone https://github.com/mkaapu/vm-utility.git
     cd vm-utility
-    git checkout -t origin/$BRANCH
+    if [ "$REMOTE" ] && [ "$REMOTE" != "origin/main" ]; then
+      git checkout -t $REMOTE
+    fi
     installers/docker/setup-docker
-  " $BRANCH
+  " $REMOTE
 
   multipass exec $GUEST_VM -- docker run hello-world
   echo "Docker commands can run without sudo on the VM:$GUEST_VM"
