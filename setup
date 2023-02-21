@@ -86,7 +86,7 @@ fi
 #######################################
 
 mkdir -p $DESTINATION
-sudo cp -v $INTERACTIVE \
+cp -v $INTERACTIVE \
   $UTILITY_DIR/multipass/mp-calls \
   $UTILITY_DIR/multipass/mp-ssh \
   $UTILITY_DIR/multipass/mp-launch \
