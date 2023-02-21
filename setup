@@ -18,15 +18,20 @@ DESTINATION="/usr/local/bin/"
 #######################################
 
 usage() {
-  echo "Usage: $0 [options]"
+  echo "Usage: $0 [options] [directory]"
   echo
-  echo "Makes vm-utility tools available for all users and scripts by"
-  echo "coping them to /usr/local/bin."
+  echo "Copies vm-utility tools to a single destination directory."
+  echo "If no arguments are given the tools are made available for all"
+  echo "users by copying them to /usr/local/bin."
   echo
   echo "Options:"
-  echo "  -h, --help		Displays help on commandline options."
-  echo "  -i, --interactive	Prompts before overwriting files"
-  echo "			in /usr/local/bin."
+  echo "  -h, --help            Displays help on commandline options."
+  echo "  -i, --interactive     Prompts before overwriting files"
+  echo "                        in destination directory."
+  echo "Arguments:"
+  echo "  directory             Destination directory"
+  echo "                        New directories are created as needed."
+  echo "                        Default: /usr/local/bin"
 }
 
 #######################################
@@ -68,8 +73,10 @@ while true; do
 done
 ARGS=("$@")
 ARGCOUNT=${#ARGS[@]}
-if [ "$ARGCOUNT" -gt "0" ]; then
-  echo Arguments not expected.
+if [ "$ARGCOUNT" -eq "1" ]; then
+  DESTINATION="${ARGS[0]}"
+elif [ "$ARGCOUNT" -gt "1" ]; then
+  echo "Too many arguments supplied."
   usage
   exit 1
 fi
@@ -78,6 +85,7 @@ fi
 # Main Execution
 #######################################
 
+mkdir -p $DESTINATION
 sudo cp -v $INTERACTIVE \
   $UTILITY_DIR/multipass/mp-calls \
   $UTILITY_DIR/multipass/mp-ssh \
@@ -92,5 +100,5 @@ sudo cp -v $INTERACTIVE \
   $UTILITY_DIR/development/config-git \
   $UTILITY_DIR/development/dev-vm \
   $UTILITY_DIR/development/purge-vm \
-  $DESTINATION.
+  $DESTINATION/.
 echo "vm-utility installed."
