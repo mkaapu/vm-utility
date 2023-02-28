@@ -1,0 +1,200 @@
+#!/usr/bin/env bash
+set -e
+
+# Docker Hub Tag for jenkins/jenkins Docker image
+JENKINS_TAG=2.375.3-lts-jdk17
+
+# The Docker container name
+NAME=jenkins-blueocean
+
+# Name for a bridge network created in Docker
+NETWORK=jenkins
+
+# The hostname of the Docker in Docker container within the $NETWORK
+DIND_HOST=docker
+
+# The Docker daemon port
+DIND_PORT=2376
+
+# The root directory where Docker TLS certificates are managed
+CERTDIR=/certs
+
+# Port on the host machine for Jenkins
+PORT=8080
+
+# TCP port on the host for inbound Jenkins agents
+INBOUND_PORT=50000
+
+# The name of the Docker volume which maps the $CERTDIR/client directory
+CERT_VOLUME=jenkins-docker-certs
+
+# The name of the Docker volume which maps the /var/jenkins_home
+JENKINS_DATA=jenkins-data
+
+# Array of environmnet variables for Docker container
+ENV_VARS=()
+
+# Array of Docker volumes mapping directories inside the container
+VOLUMES=()
+
+# Array of container's port or a range of ports exposed to the host
+PORTS=()
+
+# Commnad to run the Jenkins image with its options collected as array
+RUN=( "docker run" )
+
+#######################################
+# FUNCTIONS
+#######################################
+
+#######################################
+# Usage
+# Arguments:
+#   None
+# Outputs:
+#   Writes usage to stdout
+#######################################
+usage() {
+  echo "Usage: $0 [options] [tag]"
+  echo
+  echo "Runs Jenkins controller in Docker."
+  echo
+  echo "Use the run_dind tool first to create a bridge network in Docker and a needed Docker in Docker container."
+  echo "Then customise an official Jenkins Docker image with the provided Dockerfile.template file, build it"
+  echo "and run the image as as a container in Docker by executing this script."
+  echo
+  echo "Options:"
+  echo "  -h, --help                                    Displays help on commandline options."
+  echo "  --name                                        The Docker container name for the instance."
+  echo "                                                Default: jenkins-blueocean"
+  echo "  --detach                                      Runs the current container in the background"
+  echo "                                                and outputs the container ID."
+  echo "                                                If the option is not specified, then the running"
+  echo "                                                Docker log for the container is output in the"
+  echo "                                                terminal window."
+  echo "  --network <netwoerk>                          Connects the container to this bridge network."
+  echo "                                                Default: jenkins"
+  echo "  --dind-host <alias>                           The hostname of the Docker in Docker container"
+  echo "                                                within the bridge network (--network option)."
+  echo "                                                Default: docker"
+  echo "  --dind-port <port>	                        The Docker daemon port."
+  echo "                                                Default: 2376"
+  echo "  --cert-dir <directory>	                The root directory where Docker TLS certificates"
+  echo "                                                are managed."
+  echo "                                                Default: /certs"
+  echo "  --port                                        The port for accessing Jenkins on the host."
+  echo "                                                Default: 8080"
+  echo "  --agent-port                                  TCP port for inbound Jenkins agents on the host."
+  echo "                                                Default: 50000"
+  echo "  --home-volume                                 Maps the Jenkins home directory in the container"
+  echo "                                                to the Docker volume with this name."
+  echo "                                                Default: jenkins-data"
+  echo "  --cert-volume                                 Maps the </cert>/client directory to this volume"
+  echo "                                                making the client TLS certificates needed"
+  echo "                                                to connect to the Docker dameon available."
+  echo "                                                Default: jenkins-docker-certs"
+  echo "  -e, --env <variable=value>                    Sets environmnet variable in the container."
+  echo "  -v, --volume=[host-src]:container-dest        Mounts a volume."
+  echo "  -p, --publish <hostPort:containerPort>        Publishes a container's port or a range of ports"
+  echo "                                                to the host."
+  echo
+  echo "Argumeants:"
+  echo "  tag                                           A tag of official jenkins/jenkins Docker image"
+  echo "                                                Default: 2.375.3-lts-jdk17"
+}
+
+#######################################
+# EXECUTION
+#######################################
+
+#######################################
+# Handling command line arguments
+#######################################
+
+if ! OPTS="$(getopt \
+  --longoptions help,name:,detach,network:,dind-host:,dind-port:,\
+cert_dir:,port:,agent-port:,home-volume:cert-volume:,env:,volume:,\
+publish: \
+  --options hde:v:p: \
+  --name "$(basename "$0")" \
+  -- "$@"
+)"; then
+  usage
+  exit 1
+fi
+eval set -- "$OPTS"
+while true; do
+  case "$1" in
+    --help|-h) usage; exit ;;
+    --name) NAME="$2"; shift 2 ;;
+    # Runs the container in the background without log in the terminal
+    --detach|-d) RUN+=( "--detach" ); shift ;;
+    --network) NETWORK="$2"; shift 2 ;;
+    --dind-host) DIND_HOST"$2"; shift 2 ;;
+    --dind-port) DIND_PORT"$2"; shift 2 ;;
+    --cert-dir) CERTDIR="$2"; shift 2 ;;
+    --port) PORT="$2"; shift 2 ;;
+    --agent-port) INBOUND_PORT="$2"; shift 2 ;;
+    --cert-volume) CERT_VOLUME="$2"; shift 2 ;;
+    --jenkins-data) JENKINS_DATA="$2"; shift 2 ;;
+    --env|-e) ENV_VARS+=( "$2" ); shift 2 ;;
+    --volume|-v) VOLUMES+=( "$2" ); shift 2 ;;
+    --publish|-p) PORTS+=( "$2" ); shift 2 ;;
+    --) shift; break ;;
+    *) echo "DEBUG: No implementation for the option $1" ; exit 1 ;;
+  esac
+done
+ARGS=("$@")
+ARGCOUNT=${#ARGS[@]}
+if [ "$ARGCOUNT" -eq "1" ]; then
+  JENKINS_TAG="${ARGS[0]}"
+elif [ "$ARGCOUNT" -gt "1" ]; then
+  echo "Too many arguments supplied."
+  usage
+  exit 1
+fi
+
+#######################################
+# Main Execution
+#######################################
+
+echo
+echo "Customizing official Jenkins Docker image by creating Dockerfile"
+echo "from the Dockerfile.template .."
+cat jenkins.docker | sed "s/TAG/${JENKINS_TAG}/" > Dockerfile
+
+echo
+# Assing a name for Docker image
+IMAGE="${NAME}:${JENKINS_TAG}"
+echo "Building the $IMAGE Docker image for running Jenkins .."
+docker build -t $IMAGE .
+
+echo
+echo "Run the $IMAGE image as a container in Docker.."
+RUN+=( "--name $NAME" )
+# Always restart the container if it stops.
+RUN+=( "--restart=on-failure" )
+# Connects this container to the $NETWORK network.
+RUN+=( "--network $NETWORK" )
+# Specifies the envrionment variables used by docker, docker-compose,
+# and other Docker tools to connect to the Docker dameon.
+RUN+=( "--env DOCKER_HOST=tcp://${DIND_HOST}:${DIND_PORT}" )
+RUN+=( "--env DOCKER_CERT_PATH=$CERTDIR/client" )
+RUN+=( "--env DOCKER_TLS_VERIFY=1" )
+RUN+=( "--publish ${PORT}:8080" )
+RUN+=( "--publish ${INBOUND_PORT}:50000" )
+RUN+=( "--volume $JENKINS_DATA:/var/jenkins_home" )
+# This makes the client TLS certificates needed to connect to the Docker
+# daemon available in the path specified above by the DOCKER_CERT_PATH.
+RUN+=( "--volume $CERT_VOLUME:$CERTDIR/client:ro" )
+for var in "${ENV_VARS[@]}"; do
+  RUN+=( "--env $var" )
+done
+for volume in "${VOLUMES[@]}"; do
+  RUN+=( "--volume $volume" )
+done
+for publish in "${PORTS[@]}"; do
+  RUN+=( "--publish $publish" )
+done
+RUN+=( "${NAME}:${JENKINS_TAG}" )
+${RUN[@]}
