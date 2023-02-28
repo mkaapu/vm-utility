@@ -11,10 +11,13 @@ HOST_VM="test-vm-agent"
 GUEST_VM="vm-agent"
 format="--format=%(upstream:short)"
 REMOTE=$(git for-each-ref $format "$(git symbolic-ref -q HEAD)")
+TEST_NAME=$(basename $BASH_SOURCE)
 
 echo "Setting up the test environment.."
-echo "Copying vm-utility tools to /usr/local/bin .."
-./setup
+rm -frv test.tmp/$TEST_NAME
+echo "Copying vm-utility tools to test.tmp/$TEST_NAME .."
+./setup test.tmp/$TEST_NAME
+export PATH="$test.tmp/$TEST_NAME:$PATH"
 . mp-calls
 
 echo "Cleaning the test environment.."

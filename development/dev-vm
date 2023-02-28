@@ -188,7 +188,7 @@ fi
 
 echo
 echo "Installing vm-utility.."
-./setup
+sudo ./setup
 
 echo
 echo "Installing multipass.."
