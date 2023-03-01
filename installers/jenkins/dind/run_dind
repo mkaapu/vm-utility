@@ -1,5 +1,28 @@
 #!/usr/bin/env bash
+#
+# Script to run Docker in Docker (docker:dind) image as a container
+# so that another container running Jenkins controller have docker CLI
+# inside it. The run_jenkins script can be used to start the Jenkins
+# container which is installed with Blue Ocean plugins and features.
+#
+# Docker installation is needed. Here is a script for that:
+# <vm_utility>/installers/docker/setup-docker
+#
+# Referenc: https://www.jenkins.io/doc/book/installing/docker/
+# To achieve what is instructed on Jenkins documentation, simply run
+# the script with default options, or:
+# run_dind -rm --detach
+#
+# Check the usage() function below for more usage options.
+
+#######################################
+# Shell options
+#######################################
 set -e
+
+#######################################
+# DEFAULT VALUES
+#######################################
 
 # The Docker container name
 NAME=jenkins-docker
@@ -85,6 +108,7 @@ usage() {
   echo "                                                to the host."
   echo "Arguments:"
   echo "  container                                     The Dokcer container name"
+  echo "                                                Default: jenkins-docker"
 }
 
 #######################################
