@@ -3,9 +3,11 @@
 # Script to run Jenkins Docker container with Blue Ocean features.
 #
 # In order to execute Docker commands inside Jenkins nodes,
-# run the run_dind script first which creates a birdge network in Docker
+# run the run_dind script first. It creates a birdge network in Docker
 # and downloads and runs a Docker in Docker container.
-# Docker installation is also needed.
+#
+# The scrip uses the jenkins.docker file as a template for Dockerfile
+# to build a new Jenkins Docker image with Blue Ocean.
 #
 # Referenc: https://www.jenkins.io/doc/book/installing/docker/
 # To achieve what is instructed on Jenkins documentation:
@@ -24,6 +26,9 @@ set -e
 #######################################
 # DEFAULT VALUES
 #######################################
+
+# Path to the Dockerfile template
+DOCKERFILE=$(dirname "$0")/jenkins.docker
 
 # Docker Hub Tag for jenkins/jenkins Docker image
 JENKINS_TAG=2.375.3-lts-jdk17
@@ -191,7 +196,7 @@ fi
 echo
 echo "Customizing official Jenkins Docker image by creating Dockerfile"
 echo "from the Dockerfile.template .."
-cat jenkins.docker | sed "s/TAG/${JENKINS_TAG}/" > Dockerfile
+cat $DOCKERFILE | sed "s/TAG/${JENKINS_TAG}/" > Dockerfile
 
 echo
 # Assing a name for Docker image
