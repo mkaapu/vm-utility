@@ -14,7 +14,7 @@ set -e
 
 DIR=$(dirname "$0")
 DOCKER_USER=$USER
-CONFIG=$DIR/daemon.json
+CONFIG=$DIR/docker-daemon.json
 
 #######################################
 # USAGE
@@ -106,7 +106,7 @@ echo
 if [ -a $CONFIG ]; then
   echo "Configuration options set for the daemon.."
   sudo mkdir -p /etc/docker/
-  sudo cp $CONFIG /etc/docker/.
+  sudo cp $CONFIG /etc/docker/daemon.json
 else
   echo "No daemon configuation file found: $CONFIG"
   echo "No extra configuration options set for the daemon."

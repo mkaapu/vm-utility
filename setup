@@ -11,7 +11,7 @@ set -e
 
 INTERACTIVE=
 UTILITY_DIR="$(dirname -- "${BASH_SOURCE[0]}")"
-DESTINATION="/usr/local/bin/"
+DESTINATION="/usr/local/bin"
 
 #######################################
 # FUNCTIONS
@@ -96,6 +96,11 @@ cp -v $INTERACTIVE \
   $UTILITY_DIR/ssh/rm-ssh-tunnel \
   $UTILITY_DIR/ssh/ssh-tunnel-persistent.service \
   $UTILITY_DIR/installers/multipass/setup-multipass \
+  $UTILITY_DIR/installers/docker/setup-docker \
+  $UTILITY_DIR/installers/docker/docker-daemon.json \
+  $UTILITY_DIR/installers/jenkins/dind/run_dind \
+  $UTILITY_DIR/installers/jenkins/dind/jenkins.docker \
+  $UTILITY_DIR/installers/jenkins/dind/run_jenkins \
   $UTILITY_DIR/development/config-nano \
   $UTILITY_DIR/development/config-git \
   $UTILITY_DIR/development/dev-vm \
