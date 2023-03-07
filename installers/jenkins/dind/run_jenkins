@@ -6,7 +6,7 @@
 # run the run_dind script first. It creates a birdge network in Docker
 # and downloads and runs a Docker in Docker container.
 #
-# The scrip uses the jenkins.docker file as a template for Dockerfile
+# The script uses the jenkins.docker file as a template for Dockerfile
 # to build a new Jenkins Docker image with Blue Ocean.
 #
 # Referenc: https://www.jenkins.io/doc/book/installing/docker/
@@ -100,7 +100,6 @@ usage() {
   echo
   echo "Example of running Jenkins controller with Docker CLI and both containers in the background"
   echo "using default options:"
-  echo "./setup"
   echo "run_dind --rm --detach"
   echo "run_jenkins --detach"
   echo
