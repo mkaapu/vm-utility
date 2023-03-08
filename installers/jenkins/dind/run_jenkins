@@ -49,7 +49,7 @@ DIND_HOST=docker
 DIND_PORT=2376
 
 # The root directory where Docker TLS certificates are managed
-CERTDIR=/certs
+CERT_DIR=/certs
 
 # Port on the host machine for Jenkins
 PORT=8080
@@ -57,10 +57,10 @@ PORT=8080
 # TCP port on the host for inbound Jenkins agents
 INBOUND_PORT=50000
 
-# The name of the Docker volume which maps the $CERTDIR/client directory
+# The name of the Docker volume mapping the $CERT_DIR/client directory
 CERT_VOLUME=jenkins-docker-certs
 
-# The name of the Docker volume which maps the /var/jenkins_home
+# The name of the Docker volume mapping the /var/jenkins_home
 JENKINS_DATA=jenkins-data
 
 # Array of environmnet variables for Docker container
@@ -107,7 +107,7 @@ usage() {
   echo "  -h, --help                                    Displays help on commandline options."
   echo "  --name                                        The Docker container name for the instance."
   echo "                                                Default: jenkins-blueocean"
-  echo "  --detach                                      Runs the current container in the background"
+  echo "  -d, --detach                                  Runs the current container in the background"
   echo "                                                and outputs the container ID."
   echo "                                                If the option is not specified, then the running"
   echo "                                                Docker log for the container is output in the"
@@ -122,14 +122,14 @@ usage() {
   echo "  --cert-dir <directory>	                The root directory where Docker TLS certificates"
   echo "                                                are managed."
   echo "                                                Default: /certs"
-  echo "  --port                                        The port for accessing Jenkins on the host."
+  echo "  --port <port>                                 The port for accessing Jenkins on the host."
   echo "                                                Default: 8080"
-  echo "  --agent-port                                  TCP port for inbound Jenkins agents on the host."
+  echo "  --agent-port <port>                           TCP port for inbound Jenkins agents on the host."
   echo "                                                Default: 50000"
-  echo "  --home-volume                                 Maps the Jenkins home directory in the container"
+  echo "  --home-volume <volume>                        Maps the Jenkins home directory in the container"
   echo "                                                to the Docker volume with this name."
   echo "                                                Default: jenkins-data"
-  echo "  --cert-volume                                 Maps the </cert>/client directory to this volume"
+  echo "  --cert-volume <volume>                        Maps the </cert>/client directory to this volume"
   echo "                                                making the client TLS certificates needed"
   echo "                                                to connect to the Docker dameon available."
   echo "                                                Default: jenkins-docker-certs"
@@ -153,7 +153,7 @@ usage() {
 
 if ! OPTS="$(getopt \
   --longoptions help,name:,detach,network:,dind-host:,dind-port:,\
-cert_dir:,port:,agent-port:,home-volume:cert-volume:,env:,volume:,\
+cert_dir:,port:,agent-port:,home-volume:,cert-volume:,env:,volume:,\
 publish: \
   --options hde:v:p: \
   --name "$(basename "$0")" \
@@ -172,7 +172,7 @@ while true; do
     --network) NETWORK="$2"; shift 2 ;;
     --dind-host) DIND_HOST"$2"; shift 2 ;;
     --dind-port) DIND_PORT"$2"; shift 2 ;;
-    --cert-dir) CERTDIR="$2"; shift 2 ;;
+    --cert-dir) CERT_DIR="$2"; shift 2 ;;
     --port) PORT="$2"; shift 2 ;;
     --agent-port) INBOUND_PORT="$2"; shift 2 ;;
     --cert-volume) CERT_VOLUME="$2"; shift 2 ;;
@@ -219,14 +219,14 @@ RUN+=( "--network $NETWORK" )
 # Specifies the envrionment variables used by docker, docker-compose,
 # and other Docker tools to connect to the Docker dameon.
 RUN+=( "--env DOCKER_HOST=tcp://${DIND_HOST}:${DIND_PORT}" )
-RUN+=( "--env DOCKER_CERT_PATH=$CERTDIR/client" )
+RUN+=( "--env DOCKER_CERT_PATH=$CERT_DIR/client" )
 RUN+=( "--env DOCKER_TLS_VERIFY=1" )
 RUN+=( "--publish ${PORT}:8080" )
 RUN+=( "--publish ${INBOUND_PORT}:50000" )
 RUN+=( "--volume $JENKINS_DATA:/var/jenkins_home" )
 # This makes the client TLS certificates needed to connect to the Docker
 # daemon available in the path specified above by the DOCKER_CERT_PATH.
-RUN+=( "--volume $CERT_VOLUME:$CERTDIR/client:ro" )
+RUN+=( "--volume $CERT_VOLUME:$CERT_DIR/client:ro" )
 for var in "${ENV_VARS[@]}"; do
   RUN+=( "--env $var" )
 done
