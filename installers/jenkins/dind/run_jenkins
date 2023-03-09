@@ -176,7 +176,7 @@ while true; do
     --port) PORT="$2"; shift 2 ;;
     --agent-port) INBOUND_PORT="$2"; shift 2 ;;
     --cert-volume) CERT_VOLUME="$2"; shift 2 ;;
-    --jenkins-data) JENKINS_DATA="$2"; shift 2 ;;
+    --home-volume) JENKINS_DATA="$2"; shift 2 ;;
     --env|-e) ENV_VARS+=( "$2" ); shift 2 ;;
     --volume|-v) VOLUMES+=( "$2" ); shift 2 ;;
     --publish|-p) PORTS+=( "$2" ); shift 2 ;;
