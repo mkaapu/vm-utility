@@ -1,0 +1,231 @@
+#!/usr/bin/env bash
+
+#######################################
+# Shell options
+#######################################
+set -e
+
+#######################################
+# Includes
+#######################################
+. mp-calls
+
+#######################################
+# DEFAULT VALUES
+#######################################
+
+NAME=primary
+CPUS=1
+DISK=50G
+RAM=4G
+PORT=8080
+HOST_IP=0.0.0.0
+VM_IP=10.10.10.10
+TAG=latest
+NETWORK=jenkins
+CONTAINER=jenkins-blueocean
+DIND_CONTAINER=jenkins-docker
+DIND_HOST=docker
+DIND_PORT=2376
+JENKINS_PORT=8080
+INBOUND_PORT=50000
+CERT_VOLUME=jenkins-docker-certs
+HOME_VOLUME=jenkins-data
+
+#######################################
+# USAGE
+#######################################
+
+usage() {
+  echo "Usage: $0 [options] [instance]"
+  echo
+  echo "Create a Ubuntu LTS VM hosting Jenkins controller in Docker"
+  echo
+  echo "Multipass tool is installed if not already installed."
+  echo "A New SSH key pair is generated if existing keys are not found."
+  echo "A New Ubuntu LTS VM instance is launched with Multipas tool."
+  echo "Direct SSH connection from the host to VM instance is enabled."
+  echo "A Static IP is set to the VM instance."
+  echo "Docker is installed to the VM."
+  echo "The default 'ubuntu' user is added to the Docker group."
+  echo "Jenkins server with Blue Ocean features is setup in Docker on the VM."
+  echo "A Docker in Docker container is setup to enable Docker CLI in Jenkins."
+  echo "A local port is forwarded to the Jenkins port on the VM."
+  echo
+  echo "Options:"
+  echo "  -h, --help                    Displays help on commandline options"
+  echo "  -c, --cpus <cpus>             Number of CPUs to allocate"
+  echo "                                Default: 1"
+  echo "  -d, --disk <disk>             Disk space to allocate"
+  echo "                                Default: 50G"
+  echo "  -m, --mem <mem>               Amount of memeory to allocate"
+  echo "                                Default: 4G"
+  echo "  -v, --vm-ip <ip>              Static IP adress for the VM"
+  echo "                                Default: 10.10.10.10"
+  echo "  -i, --host-ip <ip>            Bind address of the local host"
+  echo "                                Default: 0.0.0.0 (makes local port"
+  echo "                                available on all interfaces)"
+  echo "  -p, --port <port>             Local port forwarded to the VM"
+  echo "                                instance to access Jenkins GUI"
+  echo "                                Default: 8080"
+  echo "  -t, --tag <tag>               A tag of official jenkins/jenkins"
+  echo "                                Docker image"
+  echo "                                default: latest"
+  echo "  -n, --name <name>             The name of the Jenkins container"
+  echo "                                Default: jenkins-blueocean"
+  echo "  --network <network>           Creates the bridge network in Docker"
+  echo "                                with this name"
+  echo "                                Default: jenkins"
+  echo "  --dind-name <name>            The name of the Docker in Docker"
+  echo "                                (docker:dind) container"
+  echo "                                Default: jenkins-docker"
+  echo "  --dind-host <alias>           The hostname of the Docker in Docker"
+  echo "                                container within the bridge network"
+  echo "                                Default: docker"
+  echo "  --dind-port <port>            The Docker daemon port exposed from"
+  echo "                                the Docker in Docker container"
+  echo "                                Default: 2376"
+  echo "  --jenkins-port <port>         The port for accessing Jenkins on"
+  echo "                                the VM instance"
+  echo "                                Default: 8080"
+  echo "  --agent-port <port>           TCP port for inbound Jenkins agents"
+  echo "                                on the VM."
+  echo "                                Default: 50000"
+  echo "  --home-volume <volume>        Maps the Jenkins home directory in"
+  echo "                                the container to the Docker volume"
+  echo "                                with this name"
+  echo "                                Default: jenkins-data"
+  echo "  --cert-volume <volume>        Maps the /cert/client directory in"
+  echo "                                the Docker in Docker container to"
+  echo "                                this volume making the client TLS"
+  echo "                                certificates needed to connect to"
+  echo "                                the Docker daemon available for the"
+  echo "                                Jenkins container."
+  echo "                                Default: jenkins-docker-certs"
+  echo
+  echo "Arguments:"
+  echo "  instance                      VM instance name"
+  echo "                                Default: primary"
+}
+
+#######################################
+# EXECUTION
+#######################################
+
+if ! OPTS="$(getopt \
+  --longoptions help,cpus:,disk:,mem:,vm-ip:,host-ip:,port:,tag:,name:,\
+network:,dind-name:,dind-host:,dind-port:,jenkins-port:,agent-port:,\
+home-volume:,cert-volume: \
+  --options hc:d:m:v:i:p:t:n: \
+  --name "$(basename "$0")" \
+  -- "$@"
+)"; then
+  usage
+  exit 1
+fi
+eval set -- "$OPTS"
+while true; do
+  case "$1" in
+    --help|-h) usage; exit ;;
+    --cpus|-c) CPUS="$2"; shift 2 ;;
+    --disk|-d) DISK="$2"; shift 2 ;;
+    --mem|-m) RAM="$2"; shift 2 ;;
+    --vm-ip|-v) VM_IP="$2"; shift 2 ;;
+    --host-ip|-i) HOST_IP="$2"; shift 2 ;;
+    --port|-p) PORT="$2"; shift 2 ;;
+    --tag|-t) TAG="$2"; shift 2 ;;
+    --name|-n) CONTAINER="$2"; shift 2 ;;
+    --network) NETWORK="$2"; shift 2 ;;
+    --dind-name) DIND_CONTAINER="$2"; shift 2 ;;
+    --dind-host) DIND_HOST="$2"; shift 2 ;;
+    --dind-port) DIND_PORT="$2"; shift 2 ;;
+    --jenkins-port) JENKINS_PORT="$2"; shift 2 ;;
+    --agent-port) INBOUND_PORT="$2"; shift 2 ;;
+    --home-volume) HOME_VOLUME="$2"; shift 2 ;;
+    --cert-volume) CERT_VOLUME="$2"; shift 2 ;;
+    --) shift; break ;;
+    *) echo "DEBUG: No implementation for the option $1" ; exit 1 ;;
+  esac
+done
+ARGS=("$@")
+ARGCOUNT=${#ARGS[@]}
+if [ "$ARGCOUNT" -eq "1" ]; then
+  NAME="${ARGS[0]}"
+elif [ "$ARGCOUNT" -gt "1" ]; then
+  echo "Too many arguments supplied."
+  usage
+  exit 1
+fi
+
+# Install multipass if not installed
+# and wait that multipassd is running.
+setup-multipass
+
+echo
+echo "Creating Ubuntu LTS VM instance: $NAME with a static IP: $VM_IP"
+mp-launch -c $CPUS -d $DISK -m $RAM -n $NAME -i $VM_IP -k
+
+echo
+echo "Installing and setting up the Docker to the $NAME.."
+multipass exec $NAME -- bash -c "
+  set -e
+  mkdir workspace
+  cd workspace
+  git clone https://github.com/mkaapu/vm-utility.git
+  cd vm-utility
+  sudo ./setup
+  setup-docker
+"
+
+echo
+echo "Installing the Jenkins controller to the $NAME.."
+multipass exec $NAME -- bash -c "
+  set -e
+  run_dind \
+    --rm \
+    --detach \
+    --network $NETWORK \
+    --hostname $DIND_HOST \
+    --cert-volume $CERT_VOLUME \
+    --home-volume $HOME_VOLUME \
+    --port $DIND_PORT \
+    $DIND_CONTAINER
+  run_jenkins \
+   --name $CONTAINER \
+   --detach \
+   --network $NETWORK \
+   --dind-host $DIND_HOST \
+   --dind-port $DIND_PORT \
+   --port $JENKINS_PORT \
+   --agent-port $INBOUND_PORT \
+   --home-volume $HOME_VOLUME \
+   --cert-volume $CERT_VOLUME \
+   $TAG
+" $NETWORK $DIND_HOST $CERT_VOLUME $HOME_VOLUME $DIND_PORT \
+$DIND_CONTAINER $CONTAINER $JENKINS_PORT $INBOUND_PORT $TAG
+
+echo
+echo "Creating SSH tunnel through local port: $PORT"
+echo "to the Jenkins port: $JENKINS_PORT"
+echo "on the VM instance: $NAME"
+make-ssh-tunnel -b $HOST_IP -i $VM_IP -p $PORT -t $JENKINS_PORT $NAME
+
+echo
+echo "To access the VM instance:"
+echo "$ multipass shell $NAME"
+
+echo
+echo "To access the Jenkins container:"
+echo "$ multipass exec $NAME -- docker exec -it $CONTAINER bash"
+
+echo
+echo "To access the Docker logs of the Jenkins container:"
+echo "$ multipass exec $NAME -- docker logs $CONTAINER"
+
+echo
+echo "To access a new Jenkins instance:"
+if [ "$HOST_IP" == "0.0.0.0" ]; then
+  echo "http://localhost:$PORT"
+else
+  echo "http://$HOST_IP:$PORT"
+fi
