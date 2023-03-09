@@ -112,7 +112,7 @@ usage() {
   echo "                                                If the option is not specified, then the running"
   echo "                                                Docker log for the container is output in the"
   echo "                                                terminal window."
-  echo "  --network <netwoerk>                          Connects the container to this bridge network."
+  echo "  --network <network>                           Connects the container to this bridge network."
   echo "                                                Default: jenkins"
   echo "  --dind-host <alias>                           The hostname of the Docker in Docker container"
   echo "                                                within the bridge network (--network option)."
@@ -170,8 +170,8 @@ while true; do
     # Runs the container in the background without log in the terminal
     --detach|-d) RUN+=( "--detach" ); DETACH=true; shift ;;
     --network) NETWORK="$2"; shift 2 ;;
-    --dind-host) DIND_HOST"$2"; shift 2 ;;
-    --dind-port) DIND_PORT"$2"; shift 2 ;;
+    --dind-host) DIND_HOST="$2"; shift 2 ;;
+    --dind-port) DIND_PORT="$2"; shift 2 ;;
     --cert-dir) CERT_DIR="$2"; shift 2 ;;
     --port) PORT="$2"; shift 2 ;;
     --agent-port) INBOUND_PORT="$2"; shift 2 ;;
