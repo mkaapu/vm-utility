@@ -153,7 +153,7 @@ usage() {
 
 if ! OPTS="$(getopt \
   --longoptions help,name:,detach,network:,dind-host:,dind-port:,\
-cert_dir:,port:,agent-port:,home-volume:,cert-volume:,env:,volume:,\
+cert-dir:,port:,agent-port:,home-volume:,cert-volume:,env:,volume:,\
 publish: \
   --options hde:v:p: \
   --name "$(basename "$0")" \
