@@ -166,7 +166,7 @@ echo "Creating a bridge network named '$NETWORK' in Docker.."
 docker network create $NETWORK
 
 echo
-echo "Downloading and running the docekr:dind image in order to execute\
+echo "Downloading and running the docker:dind image in order to execute\
  Docker commands inside Jenkins nodes.."
 RUN+=( "" )
 # Running Docker in Docker currently requires privileged access
