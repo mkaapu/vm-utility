@@ -92,9 +92,7 @@ usage() {
   echo "  --hostname <alias>                            Makes the container availabe with this hostname."
   echo "                                                within the bridge network (--network option)"
   echo "                                                Default: docker"
-  echo "  --cert-dir <directory>                        The root directory for Docker TLS certificates."
-  echo "                                                Default: /certs"
-  echo "  --cert-volume <volume>                        The name of the volume which maps the </cert>/client."
+  echo "  --cert-volume <volume>                        The name of the volume which maps the /cert/client."
   echo "                                                directory"
   echo "                                                Default: jenkins-docker-certs"
   echo "  --home-volume <volume>                        The name of the volume which maps the Jenkins home"
@@ -120,8 +118,8 @@ usage() {
 #######################################
 
 if ! OPTS="$(getopt \
-  --longoptions help,rm,detach,network:,hostname:,cert-dir:,\
-cert-volume:,home-volume:,port:,env:,volume:,publish: \
+  --longoptions help,rm,detach,network:,hostname:,cert-volume:,\
+home-volume:,port:,env:,volume:,publish: \
   --options hde:v:p: \
   --name "$(basename "$0")" \
   -- "$@"
@@ -139,7 +137,6 @@ while true; do
     --detach|-d) RUN+=( "--detach" ); shift ;;
     --network) NETWORK="$2"; shift 2 ;;
     --hostname) NET_ALIAS="$2"; shift 2 ;;
-    --cert-dir) CERTDIR="$2"; shift 2 ;;
     --cert-volume) CERT_VOLUME="$2"; shift 2 ;;
     --home-volume) JENKINS_DATA="$2"; shift 2 ;;
     --port) DAEMON_PORT="$2"; shift 2 ;;

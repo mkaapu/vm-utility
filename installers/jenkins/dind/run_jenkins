@@ -117,11 +117,8 @@ usage() {
   echo "  --dind-host <alias>                           The hostname of the Docker in Docker container"
   echo "                                                within the bridge network (--network option)."
   echo "                                                Default: docker"
-  echo "  --dind-port <port>	                        The Docker daemon port."
+  echo "  --dind-port <port>                            The Docker daemon port."
   echo "                                                Default: 2376"
-  echo "  --cert-dir <directory>	                The root directory where Docker TLS certificates"
-  echo "                                                are managed."
-  echo "                                                Default: /certs"
   echo "  --port <port>                                 The port for accessing Jenkins on the host."
   echo "                                                Default: 8080"
   echo "  --agent-port <port>                           TCP port for inbound Jenkins agents on the host."
@@ -129,7 +126,7 @@ usage() {
   echo "  --home-volume <volume>                        Maps the Jenkins home directory in the container"
   echo "                                                to the Docker volume with this name."
   echo "                                                Default: jenkins-data"
-  echo "  --cert-volume <volume>                        Maps the </cert>/client directory to this volume"
+  echo "  --cert-volume <volume>                        Maps the /cert/client directory to this volume"
   echo "                                                making the client TLS certificates needed"
   echo "                                                to connect to the Docker dameon available."
   echo "                                                Default: jenkins-docker-certs"
@@ -152,8 +149,8 @@ usage() {
 #######################################
 
 if ! OPTS="$(getopt \
-  --longoptions help,name:,detach,network:,dind-host:,dind-port:,\
-cert-dir:,port:,agent-port:,home-volume:,cert-volume:,env:,volume:,\
+  --longoptions help,name:,detach,network:,dind-host:,dind-port:,port:,\
+agent-port:,home-volume:,cert-volume:,env:,volume:,\
 publish: \
   --options hde:v:p: \
   --name "$(basename "$0")" \
@@ -172,7 +169,6 @@ while true; do
     --network) NETWORK="$2"; shift 2 ;;
     --dind-host) DIND_HOST="$2"; shift 2 ;;
     --dind-port) DIND_PORT="$2"; shift 2 ;;
-    --cert-dir) CERT_DIR="$2"; shift 2 ;;
     --port) PORT="$2"; shift 2 ;;
     --agent-port) INBOUND_PORT="$2"; shift 2 ;;
     --cert-volume) CERT_VOLUME="$2"; shift 2 ;;
@@ -256,10 +252,15 @@ if [ $DETACH ]; then
   " $INITIAL_PASS
 
   echo
+  echo "*************************************************************"
+  echo
   echo "On the Unlock Jenkins page:"
   echo "http://localhost:$PORT"
   echo "Paste this password into the Administrator password field:"
+  echo
   docker exec ${NAME} cat $INITIAL_PASS
   echo
   echo "and click Continue to continue Jenkins initial setup."
+  echo
+  echo "*************************************************************"
 fi
