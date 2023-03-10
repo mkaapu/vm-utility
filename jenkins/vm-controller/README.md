@@ -1,4 +1,4 @@
-# launch-vm-jenknis
+# launch-vm-jenkins
 The **launch-vm-jenkins** tool creates an Ubuntu LTS virtual machine and sets up and hosts a [Jenkins](https://www.jenkins.io/) controller as a Docker container on the VM.
 Two containers are set up to run in the VM, one hosting the Jenkins server and other hosting the Docker daemon, so that Docker CLI is usable inside the Jenkins container.
 Jenkins controller is installed with Blue Ocean plugins and features.
