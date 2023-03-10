@@ -92,7 +92,7 @@ cp -v $INTERACTIVE \
   $UTILITY_DIR/multipass/mp-launch \
   $UTILITY_DIR/multipass/mp-launch-usage \
   $UTILITY_DIR/jenkins/vm-agent/launch-vm-agent \
-  $UTILITY_DIR/jenkins/vm-controller/launch-vm-controller \
+  $UTILITY_DIR/jenkins/vm-controller/launch-vm-jenkins \
   $UTILITY_DIR/ssh/make-ssh-tunnel \
   $UTILITY_DIR/ssh/rm-ssh-tunnel \
   $UTILITY_DIR/ssh/ssh-tunnel-persistent.service \
