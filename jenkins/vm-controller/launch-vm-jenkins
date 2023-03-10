@@ -1,4 +1,21 @@
 #!/usr/bin/env bash
+#
+# Tool to create an Ubuntu LTS VM and set up and host Jenkins on it
+#
+# Two Docker containers are set up to run in the VM. One container is
+# running the Jenkins controller with Blueocean plugins and features.
+# The other container is hosting the Docker daemon (docker:dind image).
+# A Bridge network created in Docker makes Docker CLI from the Docker in
+# Docker container usable inside the Jenkins container.
+#
+# Jenkins Docker setup on the VM is automation based on the instructions
+# given here: https://www.jenkins.io/doc/book/installing/docker
+#
+# The VM setup is done using the vm-utility and Multipass tools.
+# The Multipass tool is installed if not found (sudo permissions are
+# needed).
+#
+# Check the usage() function below for more usage options.
 
 #######################################
 # Shell options
