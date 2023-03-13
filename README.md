@@ -28,10 +28,18 @@ The **multipass** directory contains bash scripts to extend the usability, scrip
 - [Documentation](multipass#mp-launch)
 
 ## Tools to setup Jenkins CI with VMs
-The *jenkins* directory contains bash scripts to help to setup [Jenkins](https://www.jenkins.io/) CI with controller isolation and distributed build agents based on virtual machines.
+The **jenkins** directory contains bash scripts to help to setup [Jenkins](https://www.jenkins.io/) CI with controller isolation and distributed build agents based on virtual machines.
+
+### launch-vm-jenkins
+- Creates a Ubuntu LTS VM and prepares it as a Jenkins server.
+- Installs Docker to the VM
+- Runs a Docker in Docker container in order to execute Docker commands inside Jenkins nodes on the VM
+- Runs a Docker container hosting a Jenkins controller with Blue Ocean plugins and features on the VM
+- Enables logging into the VM using SSH tunnel through a local port of the host.
+- [Documentation](jenkins/vm-controller#launch-vm-jenkins)
 
 ### launch-vm-agent
-- Creates a Ubuntu LTS VM and prepare it as a Jenkis agent.
+- Creates a Ubuntu LTS VM and prepares it as a Jenkis agent.
 - Installs Java JDK 17 to the VM.
 - Enables logging into the VM using SSH tunnel through a local port of the host.
 - [Documentation](jenkins/vm-agent#launch-vm-agent)
