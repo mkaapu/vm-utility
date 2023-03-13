@@ -196,13 +196,13 @@ fi
 
 echo
 echo "Customizing official Jenkins Docker image by creating Dockerfile"
-echo "from the Dockerfile.template .."
+echo "from the jenkins.docker template file.."
 cat $DOCKERFILE | sed "s/TAG/${JENKINS_TAG}/" > Dockerfile
 
 echo
 # Assing a name for Docker image
 IMAGE="${NAME}:${JENKINS_TAG}"
-echo "Building the $IMAGE Docker image for running Jenkins .."
+echo "Building the $IMAGE Docker image for running Jenkins.."
 docker build -t $IMAGE .
 
 echo
