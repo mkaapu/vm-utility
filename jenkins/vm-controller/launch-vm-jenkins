@@ -183,7 +183,7 @@ echo "Creating Ubuntu LTS VM instance: $NAME with a static IP: $VM_IP"
 mp-launch -c $CPUS -d $DISK -m $RAM -n $NAME -i $VM_IP -k
 
 echo
-echo "Installing and setting up the Docker to the $NAME.."
+echo "Installing and setting up the vm-utility tools and Docker to the $NAME.."
 multipass exec $NAME -- bash -c "
   set -e
   mkdir workspace
