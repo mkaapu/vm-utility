@@ -1,6 +1,13 @@
 # launch-vm-agent
 Tool to create a Ubuntu LTS VM and prepare it as a [Jenkins](https://www.jenkins.io/) agent.
 
+## Installation
+The tool has dependencies on the other tools in the *vm-utility* repository, so easiest way is to install them using the setup script from the root of the repository.
+To setup all the tools to /usr/local/bin:
+```
+sudo ./setup
+```
+
 ## What it does
 * **launch-vm-agent** utility installs [Multipass](https://multipass.run/) tool if it is not installed.
 * It generates a new SSH key if no existing key (ed25519) is found from user's home directory (*.ssh/id_ed25519*).
