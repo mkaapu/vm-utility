@@ -42,7 +42,7 @@ The **jenkins** directory contains bash scripts to help to setup [Jenkins](https
 - Installs Docker to the VM
 - Runs a Docker in Docker container in order to execute Docker commands inside Jenkins nodes on the VM
 - Runs a Docker container hosting a Jenkins controller with Blue Ocean plugins and features on the VM
-- Enables logging into the VM using SSH tunnel through a local port of the host.
+- Enables accessing Jenkins GUI through a local port of the host.
 - [Documentation](jenkins/vm-controller#launch-vm-jenkins)
 
 ### launch-vm-agent
