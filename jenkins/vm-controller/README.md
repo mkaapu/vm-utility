@@ -26,7 +26,7 @@ sudo ./setup
 * The customized image is run as a container in Docker to initialize and host the Jenkins controller.
 * The further instructions for inital setup of Jenkins server are povided on the terminal.
 * Local port of the host (--port option with default value 8080) is forwarded to a port on VM (--jenkins-port, default 8080) for accessing Jenkins.
-* The persisten SSH tunnel is created with a systemd service that enables accessing Jenkins GUI through the host's port.
+* The persistent SSH tunnel is created with a systemd service that enables accessing Jenkins GUI through the host's port.
 
 ## Full usage and options
 ```

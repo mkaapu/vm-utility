@@ -10,7 +10,7 @@ Tool to create a Ubuntu LTS VM and prepare it as a [Jenkins](https://www.jenkins
 * The *.ssh/known_hosts* in user's home directory is appended with the VM's host key to enable promptless SSH connection to the VM.
 * Java OpenJDK 17 is installed on the VM to make it possible to launch Jenkins agents there.
 * Local port of the host (defaults to 2222 but can be specified with the -p option) is forwarded to the VM to enable SSH tunneling.
-* The persisten SSH tunnel is created with a systemd service that enables launching Jenkins agents on the VM through the host's port.
+* The persistent SSH tunnel is created with a systemd service that enables launching Jenkins agents on the VM through the host's port.
 
 ## Full usage and options
 ```
