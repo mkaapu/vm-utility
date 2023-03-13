@@ -1,5 +1,5 @@
 # launch-vm-jenkins
-The **launch-vm-jenkins** tool creates an Ubuntu LTS virtual machine and sets up and hosts a [Jenkins](https://www.jenkins.io/) controller as a Docker container on the VM.
+The **launch-vm-jenkins** tool creates an [Ubuntu](https://ubuntu.com/) LTS virtual machine and sets up and hosts a [Jenkins](https://www.jenkins.io/) controller as a [Docker](https://www.docker.com/) container on the VM.
 Two containers are set up to run in the VM, one hosting the Jenkins server and other hosting the Docker daemon, so that Docker CLI is usable inside the Jenkins container.
 Jenkins controller is installed with Blue Ocean plugins and features.
 
@@ -43,5 +43,5 @@ With this example:
 * The virtual machine will have static IP: 10.100.123.101
 * The host (where you execute the above command) should have an IP address: 10.101.123.111 (binding the Jenkins port 8888 to that address)
 * The new Jenkins server will be set up on the VM inside the Docker container with the name 'jenkins-controller'
-* The new Jenkins controller should be accessible at http://10.101.123.111:8088/
+* The new Jenkins controller should be accessible at http://10.101.123.111:8888/
 * The Jenkins core installation should be based on the image with the *jenkins/jenkins:latest-jdk17* tag on the Docker Hub.
