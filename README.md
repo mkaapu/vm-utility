@@ -11,6 +11,13 @@ To clone and install tools, run:
 git clone https://github.com/mkaapu/vm-utility.git
 sudo vm-utility/setup
 ```
+You may also give an directory path as an argument to the setup tool, and then add that directory to your PATH to make the tools available.
+So, this would work with scripts:
+```
+git clone https://github.com/mkaapu/vm-utility.git
+vm-utility/setup /mytooldir/vm-utility
+export PATH="/mytooldir/vm-utility:$PATH"
+```
 The setup tool can be executed more interactively with -i option which allows prompt before owerwriting any existing files.
 
 ## Tools to enhance Multipass
