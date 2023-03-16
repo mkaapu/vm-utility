@@ -1,0 +1,12 @@
+[Unit]
+Description=creating route to VM instance with name NAME
+After=network.target snap.multipass.multipassd.service
+
+[Service]
+Restart=on-failure
+RestartSec=3
+Type=oneshot
+ExecStart=ip route replace IP/24 dev mpqemubr0
+
+[Install]
+WantedBy=multi-user.target

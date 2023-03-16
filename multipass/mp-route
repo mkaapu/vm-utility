@@ -1,0 +1,256 @@
+#!/usr/bin/env bash
+#
+# Adds, changes or deletes peristent routes to Multipass instances.
+#
+# The persistent-route.service template file is used to start new
+# systemd services. The tempalate file must be on the same directory
+# with this tool.
+#
+# Superuser privileges (or 'sudo' rights) are needed to create routes
+# and systemd services.
+#
+# Created new unit files are placed in /etc/systemd/system/.
+# The services are started and enabled to be autostarted on reboot.
+#
+# Check the usage() function below for more usage options
+
+#######################################
+# Shell options
+#######################################
+set -e
+
+#######################################
+# Includes
+#######################################
+. mp-calls
+
+#######################################
+# DEFAULT VALUES
+#######################################
+
+# Path of the executing script
+DIR=$(dirname "$0")
+
+# The location of the template file for systemd service unit
+UNIT_TEMPLATE=$DIR/persistent-route.service
+
+# Name of the Multipass instance
+NAME=primary
+
+# IP address of the Multipass instance
+IP=
+
+# Route to be added on your host to a VM instance
+ROUTE=
+
+# If true, the existing route and service will be disabled and removed.
+DELETE=false
+
+#######################################
+# FUNCTIONS
+#######################################
+
+#######################################
+# Usage
+# Arguments:
+#   None
+# Outputs:
+#   Writes usage to stdout
+#######################################
+usage() {
+  echo "Usage: $0 [options] <name>"
+  echo
+  echo "Persistent routing management for Multipass instances"
+  echo "(created by the vm-utility multipass tools)."
+  echo
+  echo "Tool creates, changes or deletes a systemd service"
+  echo "which enables a persistent route from host to a VM instance."
+  echo
+  echo "Superuser privileges (or 'sudo' rights) are needed."
+  echo
+  echo "The provided persistent-route.service template file is used"
+  echo "for creating new systemd services."
+  echo
+  echo "Examples:"
+  echo "  mp-route my-vm"
+  echo "    Changes or adds a new systemd service enabling a persistent route to the VM instance named 'my-vm'."
+  echo
+  echo "  mp-route -d my-vm"
+  echo "    Disables and removes the systemd service unit enabling the persistent route to the 'my-vm'."
+  echo
+  echo "Options:"
+  echo "  -h, --help            Displays help on commandline options"
+  echo "  -d, --delete          The systemd service enabling a route"
+  echo "                        from host to the VM will be removed."
+  echo "                        The route itself is not automatically"
+  echo "                        deleted until the host or its network"
+  echo "                        is restarted."
+  echo "  -i, --ip <ip>         Static IP address of the VM instance"
+  echo
+  echo "Arguments:"
+  echo "  name                  Name of the VM instance."
+  echo "                        Default: primary"
+}
+
+#######################################
+# Validate a IP address.
+# Arguments:
+#   IP address
+# Outputs:
+#  0 if valid IP address, non-zero on error.
+#
+# Derivative work:
+# https://stackoverflow.com/questions/13777387/check-for-ip-validity
+#######################################
+valid_ip() {
+  # Set up local variables
+  local ip=${1:-NO_IP_PROVIDED}
+  local IFS=.; local -a a=($ip)
+  # Start with a regex format test
+  [[ $ip =~ ^[0-9]+(\.[0-9]+){3}$ ]] || return 1
+  # Test values of quads
+  local quad
+  for quad in {0..3}; do
+    [[ "${a[$quad]}" -gt 255 ]] && return 1
+  done
+  return 0
+}
+
+#######################################
+# Change or add a route to the VM instance as a systemd service.
+# Arguments:
+#   None
+# Globals:
+#   NAME as the name of the VM instance
+#   IP as the IP address for the VM instance
+#   SERVICE_NAME as the name of the systemd service
+#   UNIT_TEMPLATE as the path to the service unit template file
+#   UNIT_FILE as the path to systemd service unit file
+#######################################
+replace_route() {
+
+  echo "Writing the systemd user unit to $UNIT_FILE .."
+  cat $UNIT_TEMPLATE \
+    | sed "s/NAME/${NAME}/g" \
+    | sed "s/IP/${ROUTE}/g" \
+    | sudo tee $UNIT_FILE > /dev/null
+
+  echo "Enabling the service to be autostarted .."
+  sudo systemctl enable $SERVICE_NAME
+
+  echo "Starting the service .."
+  sudo systemctl start $SERVICE_NAME
+  systemctl status $SERVICE_NAME
+
+}
+
+#######################################
+# Delete the systemd service enabling the persistent route to the VM.
+# Arguemnts:
+#   None
+# Globals:
+#   SERVICE_NAME as the name of the systemd service
+#   UNIT_FILE as the path to the systemd service unit file
+#######################################
+delete_route() {
+
+  echo "Stopping the service .."
+  sudo systemctl stop $SERVICE_NAME
+
+  echo "Disabling the service .."
+  sudo systemctl disable $SERVICE_NAME
+
+  echo "Removing the systemd unit: $UNIT_FILE .."
+  sudo rm $UNIT_FILE
+  echo "Unit $SERVICE_NAME removed."
+
+}
+
+#######################################
+# EXECUTION
+#######################################
+
+#######################################
+# Handling command line arguments
+#######################################
+if ! OPTS="$(getopt \
+  --longoptions help,delete:ip: \
+  --options hdi: \
+  --name "$(basename "$0")" \
+  -- "$@"
+)"; then
+  usage
+  exit 1
+fi
+eval set -- "$OPTS"
+while true; do
+  case "$1" in
+    --help|-h) usage; exit ;;
+    --delete|-d) DELETE=true; shift ;;
+    --ip|-i)
+      IP="$2"
+      if ! valid_ip "$IP"; then
+        echo "$IP is not a valid IP address."
+        usage
+        exit 1
+      fi
+      shift 2
+      ;;
+    --) shift; break ;;
+    *) echo "DEBUG: No implementation for the option $1" ; exit 1 ;;
+  esac
+done
+ARGS=("$@")
+ARGCOUNT=${#ARGS[@]}
+if [ "$ARGCOUNT" -eq "1" ]; then
+  NAME="${ARGS[0]}"
+elif [ "$ARGCOUNT" -gt "1" ]; then
+  echo "Too many arguments supplied."
+  usage
+  exit 1
+fi
+
+#######################################
+# Setting environment variables
+#######################################
+
+# Name of the service to be created to establish the persistent route
+SERVICE_NAME=persistent-route-to-$NAME.service
+
+# Path to the installed unit
+UNIT_FILE=/etc/systemd/system/$SERVICE_NAME
+
+#######################################
+# Main Execution
+#######################################
+
+# Determine the IP address of the Multipass instance
+if [ -z "$IP" ]; then
+  IP=$(mp-info-ip $NAME)
+fi
+
+# Determine the needed route
+ROUTE=$(awk -F"." '{print $1"."$2"."$3".0"}'<<<$IP)
+
+if $DELETE; then
+
+  # Parse the command to delete the route manually
+  MANUAL_DELETE=$(cat $UNIT_FILE | \
+    grep ExecStart | \
+    cut -d '=' -f 2 | \
+    sed s/replace/del/)
+
+  # Delete the systemd service
+  delete_route
+
+  echo
+  echo "The route gets deleted from the routing table \
+when either network or system restarts."
+  echo
+  echo "To remove the route manually:"
+  echo "$ sudo $MANUAL_DELETE"
+
+else
+  # Change or add a systemd service enabling the route
+  replace_route
+fi
