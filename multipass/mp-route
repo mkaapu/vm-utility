@@ -40,7 +40,7 @@ NAME=primary
 # IP address of the Multipass instance
 IP=
 
-# Route to be added on your host to a VM instance
+# A static IP address to be used for the route
 ROUTE=
 
 # If true, the existing route and service will be disabled and removed.
@@ -122,7 +122,7 @@ valid_ip() {
 #   None
 # Globals:
 #   NAME as the name of the VM instance
-#   IP as the IP address for the VM instance
+#   ROUTE as the static network IP address to be used for the route
 #   SERVICE_NAME as the name of the systemd service
 #   UNIT_TEMPLATE as the path to the service unit template file
 #   UNIT_FILE as the path to systemd service unit file
