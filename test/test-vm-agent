@@ -17,7 +17,7 @@ echo "Setting up the test environment.."
 rm -frv test.tmp/$TEST_NAME
 echo "Copying vm-utility tools to test.tmp/$TEST_NAME .."
 ./setup test.tmp/$TEST_NAME
-export PATH="$test.tmp/$TEST_NAME:$PATH"
+export PATH="test.tmp/$TEST_NAME:$PATH"
 . mp-calls
 
 echo "Cleaning the test environment.."
