@@ -22,6 +22,7 @@ set -e
 #######################################
 # Includes
 #######################################
+. net-calls
 . mp-calls
 
 #######################################
@@ -93,30 +94,6 @@ usage() {
 }
 
 #######################################
-# Validate a IP address.
-# Arguments:
-#   IP address
-# Outputs:
-#  0 if valid IP address, non-zero on error.
-#
-# Derivative work:
-# https://stackoverflow.com/questions/13777387/check-for-ip-validity
-#######################################
-valid_ip() {
-  # Set up local variables
-  local ip=${1:-NO_IP_PROVIDED}
-  local IFS=.; local -a a=($ip)
-  # Start with a regex format test
-  [[ $ip =~ ^[0-9]+(\.[0-9]+){3}$ ]] || return 1
-  # Test values of quads
-  local quad
-  for quad in {0..3}; do
-    [[ "${a[$quad]}" -gt 255 ]] && return 1
-  done
-  return 0
-}
-
-#######################################
 # Change or add a route to the VM instance as a systemd service.
 # Arguments:
 #   None
@@ -126,6 +103,8 @@ valid_ip() {
 #   SERVICE_NAME as the name of the systemd service
 #   UNIT_TEMPLATE as the path to the service unit template file
 #   UNIT_FILE as the path to systemd service unit file
+# Outputs:
+#   0 if succeeds, non-zero on error.
 #######################################
 replace_route() {
 
@@ -140,8 +119,20 @@ replace_route() {
 
   echo "Starting the service .."
   sudo systemctl start $SERVICE_NAME
-  systemctl status $SERVICE_NAME
 
+  # Show terse runtime status information about the service unit
+  # but the command returns the exit status code 3
+  # when the process is not running which is OK with this oneshot unit.
+  if systemctl status $SERVICE_NAME; then
+    :
+  else
+    STATUS=$?
+    if [ $STATUS -eq 3 ]; then
+      return 0
+    else
+      return $STATUS
+    fi
+  fi
 }
 
 #######################################
@@ -151,6 +142,8 @@ replace_route() {
 # Globals:
 #   SERVICE_NAME as the name of the systemd service
 #   UNIT_FILE as the path to the systemd service unit file
+# Outputs:
+#   0 if succeeds, non-zero on error.
 #######################################
 delete_route() {
 
