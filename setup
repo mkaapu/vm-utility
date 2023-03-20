@@ -87,6 +87,7 @@ fi
 
 mkdir -p $DESTINATION
 cp -v $INTERACTIVE \
+  $UTILITY_DIR/network/net-calls \
   $UTILITY_DIR/multipass/mp-calls \
   $UTILITY_DIR/multipass/mp-ssh \
   $UTILITY_DIR/multipass/mp-launch \

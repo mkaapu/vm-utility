@@ -11,7 +11,7 @@
 # Multipass installation is needed:
 # snap install multipass
 #
-# sudo permissions are needed to add a route from host to VM with
+# Superuser privileges are needed to add a route from host to VM with
 # a static IP.
 #
 # Check the usage() function below for more usage options
@@ -24,6 +24,7 @@ set -e
 #######################################
 # Includes
 #######################################
+. net-calls
 . mp-calls
 
 #######################################
@@ -40,8 +41,6 @@ TYPE=
 KEYGEN=false
 # Static IP address (for example: 10.101.123.111)
 IP=
-# Route to be added on your host to a new VM instance with a static IP
-ROUTE=
 # Quiet mode with no usage or extra notes with errors etc.
 QUIET=false
 # Timeout for connection attemps in seconds
@@ -91,7 +90,7 @@ usage() {
   echo "				scan a public key from the VM instance"
   echo "				to enable SSH connection from the host."
   echo "				The default is 30."
-  echo "  -q, --quiet			Silence $0."
+  echo "  -q, --quiet			No usage is displayed with errors."
   echo
   echo "Arguments:"
   echo "  name				Name of the multipass instance."
@@ -115,30 +114,6 @@ exit_error() {
     usage
   fi
   exit 1
-}
-
-#######################################
-# Validate a IP address.
-# Arguments:
-#   IP address
-# Outputs:
-#  0 if valid IP address, non-zero on error.
-#
-# Derivative work:
-# https://stackoverflow.com/questions/13777387/check-for-ip-validity
-#######################################
-valid_ip() {
-  # Set up local variables
-  local ip=${1:-NO_IP_PROVIDED}
-  local IFS=.; local -a a=($ip)
-  # Start with a regex format test
-  [[ $ip =~ ^[0-9]+(\.[0-9]+){3}$ ]] || return 1
-  # Test values of quads
-  local quad
-  for quad in {0..3}; do
-    [[ "${a[$quad]}" -gt 255 ]] && return 1
-  done
-  return 0
 }
 
 #######################################
@@ -233,7 +208,6 @@ while true; do
       if ! valid_ip "$IP"; then
         ERRORS+=("$IP is not a valid IP address.")
       fi
-      ROUTE=$(awk -F"." '{print $1"."$2"."$3".0"}'<<<$IP)
       shift 2
       ;;
     -T)
@@ -305,18 +279,24 @@ fi
 # Otherwise a dynamic IP given by Multipass is used.
 if [ -z "$IP" ]; then
   IP=$(mp-info-ip $NAME)
+  echo IP: $IP
 else
+  echo IP: $IP
   mp-static-ip $NAME $IP
-  # Adds a new route on host if not available
-  sudo ip route replace $ROUTE/24 dev mpqemubr0
+  echo
+  # Adds a new route to the VM on host (superuser privileges needed)
+  mp-route -i $IP $NAME
 fi
-
-echo IP: $IP
 
 # Makes sure there will be no duplicate entries
 # with the same IP address in the known_hosts.
 if [ -f ~/.ssh/known_hosts ]; then
+  echo
+  echo Updating ~/.ssh/known_hosts ..
   ssh-keygen -R $IP 2> /dev/null
+else
+  echo
+  echo Updating ~/.ssh/known_hosts ..
 fi
 # Adds the public key to known_hosts file.
 if ! ssh-keyscan -H -t $TYPE -T $TIMEOUT $IP >> ~/.ssh/known_hosts
