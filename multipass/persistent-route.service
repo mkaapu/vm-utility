@@ -1,5 +1,5 @@
 [Unit]
-Description=creating route to VM instance with name NAME
+Description=adding route to VM instance with name NAME
 After=network.target snap.multipass.multipassd.service
 
 [Service]
