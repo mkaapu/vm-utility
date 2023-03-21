@@ -9,13 +9,7 @@ Note that root privileges (sudo) is needed to add a route from host to a VM inst
 
 ## Installation
 
-Use the simple setup script from the root of the repository to copy tools to /usr/bin/local where they are available for all users and other tools:
-So, to clone and install the tools:
-```
-git clone https://github.com/mkaapu/vm-utility.git
-sudo vm-utility/setup
-```
-Or you can just clone the project and add the multipass directory to your PATH.
+Use the [setup](../README.md#setup) script to install the tools.
 
 ## mp-ssh
 Enables SSH connection to a Multipass instance from the host machine.
@@ -41,7 +35,7 @@ Enables creation of a Multipass instance with a static IP address and SSH connec
 ```
 mp-launch -h
 ```
-Or read [mp-launch-usage](https://github.com/mkaapu/vm-utility/blob/main/multipass/mp-launch-usage).
+Or read [mp-launch-usage](mp-launch-usage).
 
 ### Example
 Create a new Ubuntu LTS VM with a static IP address and enable acccess to the VM instance from the host machine through SSH:
