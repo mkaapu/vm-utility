@@ -45,6 +45,6 @@ ssh -p 3333 ubuntu@10.101.123.111
 ```
 If you connect through the local port you are prompted whether you want to add the VM to known hosts. To silence that for instance in scripts:
 ```
-sh-keyscan -H -t ed25519 -T 30 -p 3333 10.101.123.111 >> ~/.ssh/known_hosts
+ssh-keyscan -H -t ed25519 -T 30 -p 3333 10.101.123.111 >> ~/.ssh/known_hosts
 ssh -p 3333 ubuntu@10.101.123.111
 ```
