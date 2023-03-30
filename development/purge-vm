@@ -24,12 +24,14 @@ if [ "${#instances[@]}" -eq "0" ]; then
 fi
 
 # remove instances from known hosts
-for i in "${instances[@]}"; do
-  ip=$(mp-info-ip $i)
-  if [ $ip ]; then
-    ssh-keygen -R $ip
-  fi
-done
+if [ -a ~/.ssh/known_hosts ]; then
+  for i in "${instances[@]}"; do
+    ip=$(mp-info-ip $i)
+    if [ $ip ]; then
+      ssh-keygen -R $ip
+    fi
+  done
+fi
 
 # delete and purge instances
 multipass delete ${instances[@]}
