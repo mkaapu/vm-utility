@@ -89,7 +89,8 @@ multipass exec $HOST_VM -- bash -c '
     if [ "$REMOTE" ] && [ "$REMOTE" != "origin/main" ]; then
       git checkout -t $REMOTE
     fi
-    installers/docker/setup-docker
+    sudo ./setup
+    setup-docker
   " $REMOTE
 
   multipass exec $GUEST_VM -- docker run hello-world
