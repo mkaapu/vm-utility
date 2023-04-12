@@ -1,0 +1,51 @@
+# Helper functions for setting environment for VM-utility tools
+
+#######################################
+# Notification written in stdout when environment is not set properly.
+#######################################
+config_error_note() {
+  echo "VMU_HOME is not set."
+  echo
+  echo "To configure the vm-utility tools, call:"
+  echo "  vmu-config"
+  echo "More:"
+  echo "  vmu-config --help"
+  echo
+}
+
+#######################################
+# Notification written in stdout when tools are not set up properly.
+#######################################
+setup_error_note() {
+  echo "Error in VM-utility configuration."
+  echo
+  echo "To make tools available from the /usr/local/bin, call the setup"
+  echo "script from the root of the vm-utility repository:"
+  echo "  sudo ./setup"
+  echo "More:"
+  echo "  ./setup --help"
+  echo
+}
+
+#######################################
+# Sets environmnet for VM-utility tools.
+# Outputs:
+#   0 if environmnet set properly, non-zero on error.
+#######################################
+set_env() {
+  if [ -z "$VMU_HOME" ]; then
+    if [ ! -r ~/.vmu/environment ]; then
+      if ! vmu-config $(dirname $(realpath $BASH_SOURCE)); then
+         setup_error_note
+         config_error_note
+         return 1
+      fi
+    fi
+    if ! . ~/.vmu/environment; then
+      setup_error_note
+      config_error_note
+      return 1
+    fi
+  fi
+  return 0
+}

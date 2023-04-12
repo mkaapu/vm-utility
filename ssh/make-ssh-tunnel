@@ -18,11 +18,13 @@
 set -e
 
 #######################################
+# Includes
+#######################################
+. net-calls
+
+#######################################
 # DEFAULT VALUES
 #######################################
-
-# Path of the executing script
-DIR=$(dirname "$0")
 
 # name for tunnel/server/VM/etc. to identify the created systemd service
 NAME=external
@@ -120,17 +122,28 @@ elif [ "$ARGCOUNT" -gt "1" ]; then
 fi
 
 #######################################
-# Main Execution
+# Set Environment Variables
 #######################################
+
+# Set VMU_HOME
+if ! set_env; then echo "VMU Environment is not set."; exit 1; fi
+
+# Path to service unit template file
+SERVICE_TEMPLATE=$VMU_HOME/ssh/ssh-tunnel-persistent.service
 
 # Name of the service to be created to establish the persistent tunnel
 SERVICE_NAME=ssh-tunnel-from-$PORT-to-$NAME.service
+
 # Path to the user unit
 UNIT_FILE=~/.config/systemd/user/$SERVICE_NAME
 
+#######################################
+# Main Execution
+#######################################
+
 echo "Writing the systemd user unit to $UNIT_FILE .."
 mkdir -p ~/.config/systemd/user/
-cat $DIR/ssh-tunnel-persistent.service \
+cat $SERVICE_TEMPLATE \
   | sed "s/HOST/${IP}/g" \
   | sed "s/LOCAL/${PORT}/g" \
   | sed "s/SERVER/${TO_IP}/g" \

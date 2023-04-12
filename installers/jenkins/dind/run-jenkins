@@ -3,7 +3,7 @@
 # Script to run Jenkins Docker container with Blue Ocean features.
 #
 # In order to execute Docker commands inside Jenkins nodes,
-# run the run_dind script first. It creates a birdge network in Docker
+# run the run-dind script first. It creates a birdge network in Docker
 # and downloads and runs a Docker in Docker container.
 #
 # The script uses the jenkins.docker file as a template for Dockerfile
@@ -13,8 +13,8 @@
 # To achieve what is instructed on Jenkins documentation:
 # sudo <vm-utility>/setup
 # setup-docker # if Docker is not installed
-# run_dind -rm --detach
-# run_jenkins --detach
+# run-dind -rm --detach
+# run-jenkins --detach
 #
 # Check the usage() function below for more usage options.
 
@@ -24,11 +24,13 @@
 set -e
 
 #######################################
+# Includes
+#######################################
+. net-calls
+
+#######################################
 # DEFAULT VALUES
 #######################################
-
-# Path to the Dockerfile template
-DOCKERFILE=$(dirname "$0")/jenkins.docker
 
 # Docker Hub Tag for jenkins/jenkins Docker image
 JENKINS_TAG=2.375.3-lts-jdk17
@@ -94,14 +96,14 @@ usage() {
   echo
   echo "Runs Jenkins controller with Blue Ocean features in Docker."
   echo
-  echo "Use the run_dind tool first to create a bridge network in Docker and a needed Docker in Docker container."
+  echo "Use the run-dind tool first to create a bridge network in Docker and a needed Docker in Docker container."
   echo "Then customise an official Jenkins Docker image with the provided jenkins.docker file, build it"
   echo "and run the image as as a container in Docker by executing this script."
   echo
   echo "Example of running Jenkins controller with Docker CLI and both containers in the background"
   echo "using default options:"
-  echo "run_dind --rm --detach"
-  echo "run_jenkins --detach"
+  echo "run-dind --rm --detach"
+  echo "run-jenkins --detach"
   echo
   echo "Options:"
   echo "  -h, --help                                    Displays help on commandline options."
@@ -189,6 +191,16 @@ elif [ "$ARGCOUNT" -gt "1" ]; then
   usage
   exit 1
 fi
+
+#######################################
+# Set Environment Variables
+#######################################
+
+# Set VMU_HOME
+if ! set_env; then echo "VMU Environment is not set."; exit 1; fi
+
+# Path to the Dockerfile template
+DOCKERFILE=$VMU_HOME/installers/jenkins/dind/jenkins.docker
 
 #######################################
 # Main Execution
