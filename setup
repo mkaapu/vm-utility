@@ -1,36 +1,49 @@
 #!/usr/bin/env bash
-set -e
-
-# vm-utility installation
+#
+# VM-utility installation
 #
 # Check usage below.
+
+set -e
 
 #######################################
 # DEFAULT VALUES
 #######################################
 
+VMU_HOME=$(dirname $(realpath $BASH_SOURCE))
+BIN_DIR="/usr/local/bin"
 INTERACTIVE=
-UTILITY_DIR="$(dirname -- "${BASH_SOURCE[0]}")"
-DESTINATION="/usr/local/bin"
 
 #######################################
 # FUNCTIONS
 #######################################
 
 usage() {
-  echo "Usage: $0 [options] [directory]"
+  echo "VM-utility installation"
   echo
-  echo "Copies vm-utility tools to a single destination directory."
+  echo "Usage: setup [options] [directory]"
+  echo
+  echo "Create links to vm-utility tools in a destination directory."
   echo "If no arguments are given the tools are made available for all"
-  echo "users by copying them to /usr/local/bin."
+  echo "users by linking them to the /usr/local/bin directory."
+  echo
+  echo "Examples:"
+  echo
+  echo "  sudo ./setup"
+  echo "    Do a default global install."
+  echo
+  echo "  ./setup ~/bin"
+  echo "    Install the VM-utility tools in your own ~/bin/ directory."
   echo
   echo "Options:"
   echo "  -h, --help            Displays help on commandline options."
-  echo "  -i, --interactive     Prompts before overwriting files"
-  echo "                        in destination directory."
+  echo "  -i, --interactive     Prompts whether to remove destinations"
+  echo "                        when linking the executables."
+  echo
   echo "Arguments:"
-  echo "  directory             Destination directory"
-  echo "                        New directories are created as needed."
+  echo "  directory             The path where executable utility tools"
+  echo "                        are linked so that they can be easily"
+  echo "                        added to the PATH."
   echo "                        Default: /usr/local/bin"
 }
 
@@ -74,7 +87,7 @@ done
 ARGS=("$@")
 ARGCOUNT=${#ARGS[@]}
 if [ "$ARGCOUNT" -eq "1" ]; then
-  DESTINATION="${ARGS[0]}"
+  BIN_DIR="${ARGS[0]}"
 elif [ "$ARGCOUNT" -gt "1" ]; then
   echo "Too many arguments supplied."
   usage
@@ -85,29 +98,26 @@ fi
 # Main Execution
 #######################################
 
-mkdir -p $DESTINATION
-cp -v $INTERACTIVE \
-  $UTILITY_DIR/network/net-calls \
-  $UTILITY_DIR/multipass/mp-calls \
-  $UTILITY_DIR/multipass/mp-ssh \
-  $UTILITY_DIR/multipass/mp-launch \
-  $UTILITY_DIR/multipass/mp-launch-usage \
-  $UTILITY_DIR/multipass/mp-route \
-  $UTILITY_DIR/multipass/persistent-route.service \
-  $UTILITY_DIR/jenkins/vm-agent/launch-vm-agent \
-  $UTILITY_DIR/jenkins/vm-controller/launch-vm-jenkins \
-  $UTILITY_DIR/ssh/make-ssh-tunnel \
-  $UTILITY_DIR/ssh/rm-ssh-tunnel \
-  $UTILITY_DIR/ssh/ssh-tunnel-persistent.service \
-  $UTILITY_DIR/installers/multipass/setup-multipass \
-  $UTILITY_DIR/installers/docker/setup-docker \
-  $UTILITY_DIR/installers/docker/docker-daemon.json \
-  $UTILITY_DIR/installers/jenkins/dind/run_dind \
-  $UTILITY_DIR/installers/jenkins/dind/jenkins.docker \
-  $UTILITY_DIR/installers/jenkins/dind/run_jenkins \
-  $UTILITY_DIR/development/config-nano \
-  $UTILITY_DIR/development/config-git \
-  $UTILITY_DIR/development/dev-vm \
-  $UTILITY_DIR/development/purge-vm \
-  $DESTINATION/.
+echo "Linking executables to $BIN_DIR .."
+mkdir -p $BIN_DIR
+ln -fsv $INTERACTIVE -t $BIN_DIR \
+  $VMU_HOME/vmu-config \
+  $VMU_HOME/vmu-calls \
+  $VMU_HOME/network/net-calls \
+  $VMU_HOME/multipass/mp-calls \
+  $VMU_HOME/multipass/mp-ssh \
+  $VMU_HOME/multipass/mp-launch \
+  $VMU_HOME/multipass/mp-route \
+  $VMU_HOME/jenkins/vm-agent/launch-vm-agent \
+  $VMU_HOME/jenkins/vm-controller/launch-vm-jenkins \
+  $VMU_HOME/ssh/make-ssh-tunnel \
+  $VMU_HOME/ssh/rm-ssh-tunnel \
+  $VMU_HOME/installers/multipass/setup-multipass \
+  $VMU_HOME/installers/docker/setup-docker \
+  $VMU_HOME/installers/jenkins/dind/run-dind \
+  $VMU_HOME/installers/jenkins/dind/run-jenkins \
+  $VMU_HOME/development/config-nano \
+  $VMU_HOME/development/config-git \
+  $VMU_HOME/development/dev-vm \
+  $VMU_HOME/development/purge-vm
 echo "vm-utility installed."

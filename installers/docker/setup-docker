@@ -9,12 +9,16 @@
 set -e
 
 #######################################
+# Includes
+#######################################
+. vmu-calls
+
+#######################################
 # DEFAULT VALUES
 #######################################
 
-DIR=$(dirname "$0")
 DOCKER_USER=$USER
-CONFIG=$DIR/docker-daemon.json
+CONFIG=
 
 #######################################
 # USAGE
@@ -69,6 +73,21 @@ if [ "${#ARGS[@]}" -ne "0" ]; then
   echo "Unexpected arguments supplied."
   usage
   exit 1
+fi
+
+#######################################
+# Set Environment Variables
+#######################################
+
+# Set VMU_HOME
+if ! set_env; then
+  echo "VMU Environment is not set."
+  exit 1
+fi
+
+# Default config for the Docker daemon when --config option not provided
+if [ -z $CONFIG ]; then
+  CONFIG=$VMU_HOME/installers/docker/docker-daemon.json
 fi
 
 #######################################

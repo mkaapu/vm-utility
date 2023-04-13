@@ -5,19 +5,18 @@
 # Run this test from the root of the repository:
 # $ test/test-vm-agent
 
+echo "Setting up the test environment.."
 set -e
-
 HOST_VM="test-vm-agent"
 GUEST_VM="vm-agent"
 format="--format=%(upstream:short)"
 REMOTE=$(git for-each-ref $format "$(git symbolic-ref -q HEAD)")
 TEST_NAME=$(basename $BASH_SOURCE)
-
-echo "Setting up the test environment.."
-rm -frv test.tmp/$TEST_NAME
-echo "Copying vm-utility tools to test.tmp/$TEST_NAME .."
-./setup test.tmp/$TEST_NAME
-export PATH="test.tmp/$TEST_NAME:$PATH"
+TEST_DIR=$(realpath "test.tmp/$TEST_NAME")
+rm -frv $TEST_DIR
+./setup $TEST_DIR
+export PATH="$TEST_DIR:$PATH"
+export VMU_HOME=$PWD
 . mp-calls
 
 echo "Cleaning the test environment.."
@@ -90,7 +89,8 @@ multipass exec $HOST_VM -- bash -c '
     if [ "$REMOTE" ] && [ "$REMOTE" != "origin/main" ]; then
       git checkout -t $REMOTE
     fi
-    installers/docker/setup-docker
+    sudo ./setup
+    setup-docker
   " $REMOTE
 
   multipass exec $GUEST_VM -- docker run hello-world

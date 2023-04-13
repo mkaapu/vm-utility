@@ -198,7 +198,7 @@ echo
 echo "Installing the Jenkins controller to the $NAME.."
 multipass exec $NAME -- bash -c "
   set -e
-  run_dind \
+  run-dind \
     --rm \
     --detach \
     --network $NETWORK \
@@ -207,7 +207,7 @@ multipass exec $NAME -- bash -c "
     --home-volume $HOME_VOLUME \
     --port $DIND_PORT \
     $DIND_CONTAINER
-  run_jenkins \
+  run-jenkins \
    --name $CONTAINER \
    --detach \
    --network $NETWORK \

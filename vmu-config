@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+#
+# VM-utility configuration for the current user
+#
+# Check usage below.
+
+set -e
+
+#######################################
+# DEFAULT VALUES
+#######################################
+
+VMU_HOME=$(dirname $(realpath $BASH_SOURCE))
+ENV_DIR=~/.vmu
+ENV_CONF=environment
+
+#######################################
+# FUNCTIONS
+#######################################
+
+usage() {
+  echo "VM-utility configuration for the current user"
+  echo
+  echo "Usage: $0 [options] [VMU_HOME]"
+  echo
+  echo "Makes the $ENV_DIR directory and sets the utility environment"
+  echo "with the $ENV_CONF file inside the directory."
+  echo
+  echo "Options:"
+  echo "  -h, --help	Displays help on commandline options."
+  echo
+  echo "Arguments:"
+  echo "  VMU_HOME      Optional path to the vm-utility directory"
+  echo "                Default: The path to the repository directory"
+  echo "                where this script is located when executed."
+  echo "                With your current setup, if ommitted,"
+  echo "                the following environment variable would be set"
+  echo "                to be used by the vm-utility tools:"
+  echo "                VMU_HOME=$VMU_HOME"
+}
+
+#######################################
+# EXECUTION
+#######################################
+
+#######################################
+# Handling command line arguments
+#######################################
+if ! OPTS="$(getopt \
+  --longoptions help \
+  --options h \
+  --name "$(basename "$0")" \
+  -- "$@"
+)"; then
+  usage
+  exit 1
+fi
+eval set -- "$OPTS"
+while true; do
+  case "$1" in
+    --help|-h)
+      usage;
+      exit
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      echo "DEBUG: No implementation for the option $1"
+      exit 1
+      ;;
+  esac
+done
+ARGS=("$@")
+ARGCOUNT=${#ARGS[@]}
+if [ "$ARGCOUNT" -eq "1" ]; then
+  VMU_DIR="${ARGS[0]}"
+elif [ "$ARGCOUNT" -gt "1" ]; then
+  echo "Too many arguments supplied."
+  usage
+  exit 1
+fi
+
+#######################################
+# Main Execution
+#######################################
+
+if [ $VMU_DIR ]; then
+  VMU_HOME=$(realpath $VMU_DIR)
+fi
+mkdir -p -m go-rwx $ENV_DIR
+echo "export VMU_HOME=$VMU_HOME" > $ENV_DIR/$ENV_CONF
+echo "VM-utility configuration updated to $ENV_DIR/$ENV_CONF"

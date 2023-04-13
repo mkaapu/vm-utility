@@ -4,21 +4,26 @@ Scripts are written in Bash and tested on Ubuntu Linux distributions.
 Note that some of the tools need to be exectuted either with superuser privileges or as root user to complete some administrative commands.
 
 ## Setup
-The setup script will copy vm-utility tools to */usr/bin/local* so they will be available for all users and other tools. 
+When executed without arguments, the **setup** script will make symbolic links to the executable VM-utility tools in */usr/bin/local* so they will be available for all users and other tools.
 
 To clone and install tools, run:
 ```
 git clone https://github.com/mkaapu/vm-utility.git
 sudo vm-utility/setup
 ```
-You may also give an directory path as an argument to the setup tool, and then add that directory to your PATH to make the tools available.
-So, this would work with scripts:
+You may also give a directory path as an argument to the setup tool, and then add that directory to your PATH to make the tools available.
+So this would work with scripts:
 ```
 git clone https://github.com/mkaapu/vm-utility.git
 vm-utility/setup /mytooldir/vm-utility
 export PATH="/mytooldir/vm-utility:$PATH"
 ```
-The setup tool can be executed more interactively with -i option which allows prompt before owerwriting any existing files.
+The setup tool can be executed more interactively with -i option which allow prompt before removing any existing files/links in the destination directory.
+
+## Configuration
+The **vm-config** tool will set up the envrionment for the current user, but you should be able to use the VM-utility tools without further configuration steps after an initial [setup](#setup). The first VM-utility tool used, which needs that configured environment, calls the vm-config script to set it automatically.
+
+Your VM-utility environment and configuration files will be stored in your own ~/.vmu directory.
 
 ## Tools to enhance Multipass
 The **multipass** directory contains bash scripts to extend the usability, scripting and automation possiblities of the [Multipass](https://multipass.run/) tool.
