@@ -56,5 +56,3 @@ fi
 if [ "$EDIT" ]; then
   git config --global core.editor $EDIT
 fi
-git config \
-  --global url.ssh://git@github.com/.insteadOf https://github.com/
