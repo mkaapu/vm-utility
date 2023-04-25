@@ -62,3 +62,31 @@ Remove a systemd service enabling a route from host to the VM named 'my-vm' crea
 mp-route -d my-vm
 ```
 The systemd service unit will be disabled, stopped and removed, but the route itself is not automatically deleted until the host or its network is restarted. But the script will display a command in the terminal which can be used to manually remove the route.
+
+## mp-delete
+The **mp-delete** deletes Multipass instances created or configured with or without the [mp-ssh](#mp-ssh) tool (or with any tool which is using the mp-ssh, like [mp-launch](#mp-launch)).
+
+The tool also deletes any services created for the deleted instances by the [mp-route](#mp-route). The known hosts keys set by [mp-ssh](#mp-ssh) tool (to enable promptless SSH connection from host to the VM) are also removed.
+
+### Full usage and options:
+```
+mp-delete -h
+```
+
+### Examples
+Delete the VM instance named 'my-vm', to be purged with the `mp-delete --purge my-vm` (or with the `multipass purge`) command:
+```
+mp-delete my-vm
+```
+The above command will delete the VM instance but will not purge all its data, so you could recover the VM instance:
+```
+multipass recover my-vm
+```
+Delete and purge the VM instances named 'my-vm' and 'test-vm' and all their data immediately:
+```
+mp-delete -p my-vm test-vm
+```
+Delete and purge all VM instances configured with the [mp-ssh](#mp-ssh) or created with the [mp-launch](#mp-launch) (or any tool using those tools):
+```
+mp-delete --all -p
+```
