@@ -108,6 +108,7 @@ ln -fsv $INTERACTIVE -t $BIN_DIR \
   $VMU_HOME/multipass/mp-ssh \
   $VMU_HOME/multipass/mp-launch \
   $VMU_HOME/multipass/mp-route \
+  $VMU_HOME/multipass/mp-delete \
   $VMU_HOME/jenkins/vm-agent/launch-vm-agent \
   $VMU_HOME/jenkins/vm-controller/launch-vm-jenkins \
   $VMU_HOME/ssh/make-ssh-tunnel \

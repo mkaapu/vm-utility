@@ -24,6 +24,7 @@ set -e
 #######################################
 # Includes
 #######################################
+. vmu-calls
 . net-calls
 . mp-calls
 
@@ -288,15 +289,12 @@ else
   mp-route -i $IP $NAME
 fi
 
+echo
+echo Updating ~/.ssh/known_hosts ..
 # Makes sure there will be no duplicate entries
 # with the same IP address in the known_hosts.
 if [ -f ~/.ssh/known_hosts ]; then
-  echo
-  echo Updating ~/.ssh/known_hosts ..
   ssh-keygen -R $IP 2> /dev/null
-else
-  echo
-  echo Updating ~/.ssh/known_hosts ..
 fi
 # Adds the public key to known_hosts file.
 if ! ssh-keyscan -H -t $TYPE -T $TIMEOUT $IP >> ~/.ssh/known_hosts
@@ -307,6 +305,10 @@ then
   ERRORS+=("Timeout seconds can be extended with the -T option.")
   exit_error
 fi
+
+# The IP address stored so the known hosts key can be removed
+# when the VM is purged
+set_config $NAME $IP $VMU_IPS
 
 echo
 echo "Open a shell prompt on the $NAME:"

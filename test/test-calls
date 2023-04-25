@@ -1,0 +1,211 @@
+#!/usr/bin/env bash
+#
+# Helper functions and variables implementing a simple test framework
+# for testing bash scripts
+#
+# An example of a test file content:
+# . test/test-calls
+# tcase "Find README.md file" ls -la | grep README.md
+# tcase "Check .gitignore" cat .gitignore | grep test-tmp
+# tsummary
+
+#######################################
+# GLOBAL VARIABLES
+#######################################
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BROWN='\033[0;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+LGRAY='\033[0;37m'
+NC='\033[0m' # No color
+
+# Test report section marker
+SEPARATOR="#######################################"
+
+# Start of test summary as an array of strings
+SUMMARY=( "${LGRAY}$SEPARATOR" "SUMMARY" "$SEPARATOR${NC}" )
+
+# Test case ID counter
+TESTCID=0
+# Test set ID counter
+TESTSID=0
+
+
+# Number of tested cases
+TESTED=0
+# Number of failed cases
+FAILED=0
+
+#######################################
+# Run a test case
+#
+# If the exit status of the command is 0, verdict is SUCCESS.
+# If the exit status of the command is non-zero, verdict is FAILED.
+#
+# Test case information is collected to the global SUMMARY variable.
+# The summary can written to stdout by calling the tsummary function.
+#
+# Usage:
+#   tcase "List information about the test-calls file" ls test-calls
+#
+# Arguments:
+#   Name of the test case
+#   Command to be tested
+# Outputs:
+#   Exit status of the tested command is returned.
+#   Test case name, ID, command and verdict is written to stdout.
+#   The command output is written normally to stdout or stdin.
+#   Written output is wrapped to its own section.
+#######################################
+tcase() {
+
+  TESTCID=$((TESTCID+1))
+
+  local status=0
+  local name="$1"
+  local command="${@:2}"
+  local note=
+
+  echo
+  echo $SEPARATOR
+  echo "CASE ${TESTCID}: $name"
+  echo $SEPARATOR
+  set -x
+
+  $command
+  { status=$?; set +x; } 2>/dev/null
+
+  echo $SEPARATOR
+  if [ $status -eq 0 ]; then
+    note="CASE ${TESTCID}: ${GREEN}SUCCESS${NC}: $name"
+  else
+    note="CASE ${TESTCID}: ${RED}FAILED${NC}: $name"
+    FAILED=$((FAILED+1))
+  fi
+  echo -e $note
+  echo $SEPARATOR
+  TESTED=$((TESTED+1))
+  SUMMARY+=( "$note" )
+
+  return $status
+}
+
+#######################################
+# Run a command, script or function consisting a set of test cases
+#
+# If the exit status of the command is 0, verdict is SUCCESS.
+# If the exit status of the command is non-zero, verdict is FAILED.
+#
+# Can be used to call a test function which have multiple tcase calls
+# to wrap them up as a set of tests. Note that such a function needs
+# to return its exit status correctly to indicate if all tests passed
+# or if any of them failed.
+#
+# Test set information is written to the global SUMMARY variable.
+# The summary can written to stdout by calling the tsummary function.
+#
+# Usage:
+#   . my-test-set # includes a function called run-vmu-tests
+#   tcase "VMU tests" run-vmu-tests
+#
+# Arguments:
+#   Name of the test set
+#   Command or function to be executed
+# Outputs:
+#   Exit status of the tested command is returned.
+#   Test set name, ID, tcase outputs and status is written to stdin.
+#   The command output is written normally to sdtout or stdin.
+#   Written output is wrapped to its own section.
+#######################################
+tset() {
+
+  TESTSID=$((TESTSID+1))
+
+  local status=0
+  local set_name="$1"
+  local command="${@:2}"
+  local separator="${LGRAY}---------------------------------------"
+
+  echo
+  echo -e "${LGRAY}${SEPARATOR}"
+  echo "SET ${TESTSID}: ${set_name}"
+  echo -e "${SEPARATOR}${NC}"
+  SUMMARY+=( $separator "SET ${TESTSID}: ${set_name}${NC}" )
+
+  $command
+  status=$?
+
+  echo -e "${LGRAY}${SEPARATOR}"
+  summary_set="${LGRAY}SET ${TESTSID}${NC}: ${LGRAY}${set_name}${NC}"
+  if [ $status -eq 0 ]; then
+    echo -e "${GREEN}SUCCESS${NC}: ${summary_set}"
+    SUMMARY+=( "${summary_set}: ${GREEN}SUCCESS${NC}" )
+  else
+    echo -e "${RED}FAILED${NC}: ${summary_set}"
+    SUMMARY+=( "${summary_set}: ${RED}FAILED${NC}" )
+  fi
+  SUMMARY+=( "$separator${NC}" )
+  echo -e "${LGRAY}${SEPARATOR}${NC}"
+
+  return $status
+}
+
+#######################################
+# Run a command or a test step without any evaluated verdict
+#
+# Usage:
+#  tstep "Clean temporary test output" rm -rf test.tmp
+#
+# Arguments:
+#   Name of the test step
+#   Command to be executed
+# Outputs:
+#   Exit status of the test step is returned.
+#   Test step name is written to the stdout.
+#   The command output is written normally to stdout or stdin.
+#   Written output is wrapped to its own section.
+#######################################
+tstep() {
+
+  local status=0
+  local step="$1"
+  local command="${@:2}"
+  local separator="${LGRAY}---------------------------------------"
+
+  echo
+  echo -e $separator
+  echo "$step"
+  echo -e "$separator${NC}"
+
+  $command
+  status=$?
+
+  echo -e $separator
+  if [ $status -eq 0 ]; then
+    echo "DONE: $step"
+  else
+    echo -e "${RED}FAILED${LGRAY}: $step"
+  fi
+  echo -e "$separator${NC}"
+
+  return $status
+}
+
+#######################################
+# Write the summary of tests to stdout.
+#######################################
+tsummary() {
+  echo
+  for line in "${SUMMARY[@]}"; do
+    echo -e "$line"
+  done
+  echo -e "${LGRAY}${SEPARATOR}"
+  echo -e "Test Count${NC}: $TESTED"
+  echo -e "${GREEN}Passed${NC}:     $((${TESTED}-${FAILED}))"
+  echo -e "${RED}Failed${NC}:     $FAILED"
+  echo -e "${LGRAY}${SEPARATOR}${NC}"
+}

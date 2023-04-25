@@ -219,8 +219,10 @@ UNIT_FILE=/etc/systemd/system/$SERVICE_NAME
 #######################################
 
 # Determine the IP address of the Multipass instance
-if [ -z "$IP" ]; then
-  IP=$(mp-info-ip $NAME)
+if [ ! $DELETE  ] && [ -z "$IP" ]; then
+  if ! IP=$(get_config $NAME $VMU_IPS); then
+    IP=$(mp-info-ip $NAME)
+  fi
 fi
 
 # Determine the needed route
