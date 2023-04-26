@@ -131,6 +131,12 @@ if $DELETE_ALL; then
   INSTANCES=( $(get_keys $VMU_IPS) )
 fi
 
+if [ ${#INSTANCES[@]} -eq 0 ]; then
+  echo "Name argument or --all is required"
+  usage
+  exit 1
+fi
+
 for vm in ${INSTANCES[@]}; do
 
   # Make the multipass delete command to delete the $vm
