@@ -295,6 +295,12 @@ echo Updating ~/.ssh/known_hosts ..
 # with the same IP address in the known_hosts.
 if [ -f ~/.ssh/known_hosts ]; then
   ssh-keygen -R $IP 2> /dev/null
+  # When IP address is re-configured for the VM, remove old entries
+  if OLD_IP=$(get_config $NAME $VMU_IPS); then
+    if [ $OLD_IP != $IP ]; then
+      ssh-keygen -R $OLD_IP 2> /dev/null
+    fi
+  fi
 fi
 # Adds the public key to known_hosts file.
 if ! ssh-keyscan -H -t $TYPE -T $TIMEOUT $IP >> ~/.ssh/known_hosts
@@ -307,7 +313,7 @@ then
 fi
 
 # The IP address stored so the known hosts key can be removed
-# when the VM is purged
+# when the VM is purged or a new IP is configured for the VM
 set_config $NAME $IP $VMU_IPS
 
 echo
