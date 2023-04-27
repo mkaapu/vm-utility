@@ -1,0 +1,191 @@
+#!/usr/bin/env bash
+#
+# Delete a Multipass instance.
+#
+# The script can be used to remove VM instances created by the mp-launch
+# or configured with the mp-ssh. It removes any persistent routes added
+# by the mp-ssh or mp-route tools. It also deletes the known hosts key
+# from the host set by the mp-ssh or mp-launch tools.
+#
+# Multipass installation is needed:
+# snap install multipass
+#
+# Superuser privileges are needed for removing a persistent route
+# from a host to a VM with a static IP.
+#
+# Check the usage() function below for more usage options
+
+#######################################
+# Shell options
+#######################################
+set -e
+
+#######################################
+# Includes
+#######################################
+. vmu-calls
+
+#######################################
+# DEFAULT VALUES
+#######################################
+
+# Level of logging verbosity (for the multipass delete command)
+VERBOSE=0
+
+# If true, deletes all VMs created or configured by the VM-utility tools
+DELETE_ALL=false
+
+# If true, VM instances and all their data will be purged permanently
+PURGE=false
+
+#######################################
+# FUNCTIONS
+#######################################
+
+#######################################
+# Usage
+# Arguments:
+#   None
+# Outputs:
+#   Writes usage to stdout
+#######################################
+usage() {
+  echo "Usage: $0 [options] <name> [<name> ...]"
+  echo
+  echo "Delete Multipass instances."
+  echo
+  echo "Tool can be used to delete Multipass instances created with"
+  echo "or without VM-utility tools."
+  echo
+  echo "Any known hosts keys of the deleted VMs will be also removed."
+  echo "Also any services created by the mp-route to persist routes"
+  echo "between the host and VM instances will be disabled and removed."
+  echo "Removing systemd services needs superuser privileges."
+  echo
+  echo "Options:"
+  echo "  -h, --help    Displays help on commandline options."
+  echo "  -v, --verbose Increase logging verbosity. Repeat the 'v' in the short option"
+  echo "                for more detail. Maximum verbosity is obtained with 4 (or more)"
+  echo "                 v's, i.e. -vvvv."
+  echo "  --all         Delete all instances configured by the VM-utility tools."
+  echo "  -p, --purge   Purge instances and all their data immediately."
+  echo
+  echo "Arguments:"
+  echo "  name          Names of instances to delete"
+}
+
+#######################################
+# EXECUTION
+#######################################
+
+#######################################
+# Handling command line arguments
+#######################################
+if ! OPTS="$(getopt \
+  --longoptions help,verbose,all,purge \
+  --options hvp \
+  --name "$(basename "$0")" \
+  -- "$@"
+)"; then
+  usage
+  exit 1
+fi
+eval set -- "$OPTS"
+while true; do
+  case "$1" in
+    --help|-h)
+      usage
+      exit
+      ;;
+    --verbose|-v)
+      VERBOSE=$((VERBOSE+1))
+      shift
+      ;;
+    --all)
+      DELETE_ALL=true
+      shift
+      ;;
+    --purge|-p)
+      PURGE=true
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      echo "DEBUG: No implementation for the option $1"
+      exit 1
+      ;;
+  esac
+done
+INSTANCES=("$@")
+
+#######################################
+# Main Execution
+#######################################
+
+ERROR_NRO=0
+
+if $DELETE_ALL; then
+  INSTANCES=( $(get_keys $VMU_IPS) )
+fi
+
+if [ ${#INSTANCES[@]} -eq 0 ]; then
+  echo "Name argument or --all is required"
+  usage
+  exit 1
+fi
+
+for vm in ${INSTANCES[@]}; do
+
+  # Make the multipass delete command to delete the $vm
+  delete_command=( "multipass delete" )
+  if $PURGE; then
+    delete_command+=( "--purge" )
+  fi
+  if [ "$VERBOSE" -gt 0 ]; then
+    varg="-"
+  for v in $(seq 1 $VERBOSE); do varg="${varg}v"; done
+    delete_command+=( $varg )
+  fi
+  delete_command+=( $vm )
+
+  if [ "$VERBOSE" -gt 0 ]; then echo; fi
+  # If deleting the $vm fails, do no delete any $vm related data
+  if ! ${delete_command[@]}; then
+    ERROR_NRO=$((ERROR_NRO+1))
+    continue
+  elif [ "$VERBOSE" -gt 0 ]; then
+    echo "VM instance: $vm deleted."
+  fi
+
+  # Remove the known hosts key of the VM instance
+  if ip=$(get_config $vm $VMU_IPS); then
+    if [ -f ~/.ssh/known_hosts ]; then
+      ssh-keygen -R $ip 2> /dev/null
+    fi
+  fi
+
+  # Unset the VMU configuration when VMU is purged
+  if $PURGE; then
+    unset_config $vm $VMU_IPS || true
+  fi
+
+  # Disable and remove a systemd service providing a persistent route
+  # from the host to the VM instance
+  systemd_unit=/etc/systemd/system/persistent-route-to-${vm}.service
+  if [ -a $systemd_unit ]; then
+    # needs superuser privileges
+    if ! mp-route -d $vm; then
+      ERROR_NRO=$((ERROR_NRO+1))
+    fi
+  fi
+
+done
+
+if [ $ERROR_NRO -gt 0 ]; then
+  echo
+  echo "$0: There were $ERROR_NRO error(s)."
+fi
+exit $ERROR_NRO

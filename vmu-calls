@@ -1,9 +1,12 @@
-# Helper functions for setting environment for VM-utility tools
+# Helper functions and environment variables for VM-utility tools
+
+VMU_ENV=~/.vmu/environment
+VMU_IPS=~/.vmu/vm_ips
 
 #######################################
 # Notification written in stdout when environment is not set properly.
 #######################################
-config_error_note() {
+note_config_error() {
   echo "VMU_HOME is not set."
   echo
   echo "To configure the vm-utility tools, call:"
@@ -16,7 +19,7 @@ config_error_note() {
 #######################################
 # Notification written in stdout when tools are not set up properly.
 #######################################
-setup_error_note() {
+note_setup_error() {
   echo "Error in VM-utility configuration."
   echo
   echo "To make tools available from the /usr/local/bin, call the setup"
@@ -28,24 +31,138 @@ setup_error_note() {
 }
 
 #######################################
-# Sets environmnet for VM-utility tools.
+# Set environmnet for VM-utility tools.
 # Outputs:
 #   0 if environmnet set properly, non-zero on error.
 #######################################
 set_env() {
   if [ -z "$VMU_HOME" ]; then
-    if [ ! -r ~/.vmu/environment ]; then
+    if [ ! -r $VMU_ENV ]; then
       if ! vmu-config $(dirname $(realpath $BASH_SOURCE)); then
-         setup_error_note
-         config_error_note
+         note_setup_error
+         note_config_error
          return 1
       fi
     fi
-    if ! . ~/.vmu/environment; then
-      setup_error_note
-      config_error_note
+    if ! . $VMU_ENV; then
+      note_setup_error
+      note_config_error
       return 1
     fi
   fi
   return 0
+}
+
+#######################################
+# Update a <key>=<value> pair in a configuration file.
+# Arguments:
+#   Key
+#   Value
+#   Configuration file
+# Outputs
+#   0 if configuration file was updated, non-zero on error.
+#######################################
+set_config() {
+
+  # arguments
+  local key=$1
+  local value=$2
+  local file=$3
+
+  # create a configuration file if it does not exist yet
+  if [ ! -f $file ]; then
+    touch $file
+  fi
+
+  local line_nro=0
+  while read line; do
+    line_nro=$((line_nro+1))
+    # existing key found
+    if [ ${line%=*} == $key ]; then
+      # update value for the existing key
+      if ! sed -i "${line_nro}s/.*/${key}=${value}/" $file; then
+        return 1
+      fi
+      return 0
+    fi
+  done < $file
+
+  # add a new key
+  if ! echo $key=$value >> $file; then
+    return 1
+  fi
+  return 0
+
+}
+
+#######################################
+# Remove a line with a key from a configuration file.
+# Arguments:
+#   Key
+#   Configuration file
+# Outputs
+#   0 if key was removed, non-zero otherwise.
+#######################################
+unset_config() {
+
+  # arguments
+  local key=$1
+  local file=$2
+
+  local line_nro=0
+  while read line; do
+    line_nro=$((line_nro+1))
+    if [ ${line%=*} == $key ]; then
+      if ! sed -i "${line_nro}d" $file; then
+        return 1
+      fi
+      return 0
+    fi
+  done < $file
+  return 1
+
+}
+
+#######################################
+# Get a value for a given key from a configuration file.
+# Arguments:
+#   Key
+#   Configuration file
+# Outputs
+#   0 if key was removed, non-zero otherwise.
+#   Writes the value to stdout.
+#######################################
+get_config() {
+
+  # arguments
+  local key=$1
+  local file=$2
+
+  while read line; do
+    if [ ${line%=*} == $key ]; then
+      echo ${line#*=}
+      return 0
+    fi
+  done < $file
+  return 1
+}
+
+
+#######################################
+# Get all keys from a configuration file.
+# Arguments:
+#   Configuration file
+# Outputs
+#   0 if keys were found, non-zero otherwise.
+#   Writes list of keys to stdout using space as separator.
+#######################################
+get_keys() {
+  local file=$1
+  if [ -f $file ]; then
+    if ! echo $(cat $file | cut -d '=' -f 1); then
+      return 1
+    fi
+    return 0
+  fi
+  return 1
 }

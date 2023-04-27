@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+#
+# Tests creation and deletion of Multipass instances with VM-utility
+# tools like mp-ssh, mp-launch, mp-route and mp-delete.
+#
+# Run this test from the root of the repository:
+# $ test/test-mp-launch-delete
+
+. test/test-calls
+
+VM1='mp-made'
+VM2='mp-made-ssh'
+VM3='mpl-made'
+VM4='mpl-made-ip'
+VM4_IP=10.10.10.11
+
+make_vms() {
+
+  local errors=0
+
+  name="Launching the VM: $VM1 with the multipass"
+  if ! tstep "$name" multipass launch -n $VM1; then
+    errors=$((errors+1))
+  fi
+
+  name="Launching the VM: $VM2 with the multipass"
+  if ! tstep "${name}" multipass launch -n $VM2; then
+    errors=$((errors+1))
+  fi
+
+  name="Enabling ssh connection to the $VM2 with the mp-ssh"
+  if ! tcase "${name}" mp-ssh $VM2 -q; then
+    errors=$((errors+1))
+  fi
+
+  name="Launching the VM: $VM3 with the mp-launch"
+  if ! tcase "${name}" mp-launch -n $VM3 -q; then
+    errors=$((errors+1))
+  fi
+
+  name="Launching the VM: $VM4 with the mp-launch --ip $VM4_IP"
+  if ! tcase "${name}" mp-launch -n $VM4 -i $VM4_IP -q; then
+    errors=$((errors+1))
+  fi
+
+  return $errors
+
+}
+
+show_vms() {
+  tstep "multipass list" multipass list
+  tstep "VM IPs" cat ~/.vmu/vm_ips
+}
+
+name="Creating test-VMs"
+tset "${name}" make_vms
+
+show_vms
+
+name="Deleting test-VMs with the mp-delete without arguments"
+tcase "${name}" mp-delete $VM1 $VM2 $VM3 $VM4
+
+show_vms
+
+name="Purging the test-VMs with the mp-delete --purge"
+tcase "${name}" mp-delete $VM1 $VM2 $VM3 $VM4 -p
+
+show_vms
+
+name="Re-creating test-VMs"
+tset "${name}" make_vms
+
+show_vms
+
+name="Deleting test-VMs with the mp-delete --purge -v"
+tcase "${name}" mp-delete $VM1 $VM2 $VM3 $VM4 -pv
+
+show_vms
+
+tsummary
