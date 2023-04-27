@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+#
+# Tests creation and deletion of Multipass instances with VM-utility
+# tools like mp-ssh, mp-launch, mp-route and mp-delete.
+#
+# Run this test from the root of the repository:
+# $ test/test-mp-launch-delete
 
 . test/test-calls
 
