@@ -66,7 +66,7 @@ The systemd service unit will be disabled, stopped and removed, but the route it
 ## mp-delete
 The **mp-delete** deletes Multipass instances created or configured with or without the [mp-ssh](#mp-ssh) tool (or with any tool which is using the mp-ssh, like [mp-launch](#mp-launch)).
 
-The tool also deletes any services created for the deleted instances by the [mp-route](#mp-route). The known hosts keys set by [mp-ssh](#mp-ssh) tool (to enable promptless SSH connection from host to the VM) are also removed.
+The tool also deletes any services created for the deleted instances by the [mp-route](#mp-route) (but superuser privileges are needed to remove the services). The known hosts keys set by [mp-ssh](#mp-ssh) tool (to enable promptless SSH connection from host to the VM) are also removed.
 
 ### Full usage and options:
 ```
@@ -88,5 +88,5 @@ mp-delete -p my-vm test-vm
 ```
 Delete and purge all VM instances configured with the [mp-ssh](#mp-ssh) or created with the [mp-launch](#mp-launch) (or any tool using those tools):
 ```
-mp-delete --all -p
+mp-delete -p --all
 ```
