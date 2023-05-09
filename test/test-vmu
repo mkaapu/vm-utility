@@ -3,7 +3,7 @@
 # Tests various vm-utility tools
 #
 # Run this test set from the root of the repository:
-# $ test/test-vm-agent
+# $ test/test-vmu
 
 #######################################
 # Includes
