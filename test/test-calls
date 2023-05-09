@@ -86,7 +86,7 @@ tcase() {
     note="CASE ${TESTCID}: ${RED}FAILED${NC}: $name"
     FAILED=$((FAILED+1))
   fi
-  echo -e $note
+  echo -e "$note"
   echo $SEPARATOR
   TESTED=$((TESTED+1))
   SUMMARY+=( "$note" )

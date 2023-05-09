@@ -120,5 +120,5 @@ ln -fsv $INTERACTIVE -t $BIN_DIR \
   $VMU_HOME/development/config-nano \
   $VMU_HOME/development/config-git \
   $VMU_HOME/development/dev-vm \
-  $VMU_HOME/development/purge-vm
+  $VMU_HOME/development/mp-purge
 echo "vm-utility installed."

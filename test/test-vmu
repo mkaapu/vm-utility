@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+#
+# Tests various vm-utility tools
+#
+# Run this test set from the root of the repository:
+# $ test/test-vm-agent
+
+#######################################
+# Includes
+#######################################
+. test/test-calls
+. git/git-calls
+
+#######################################
+# Gloabl Variables
+#######################################
+HOST_IP=10.10.10.10
+JENKINS_IP=10.10.30.10
+GUEST_IP=10.10.20.10
+HOST_VM="test-vm-agent"
+JENKINS_VM="vm-jenkins"
+GUEST_VM="vm-agent"
+JENKINS_TAG="latest-jdk17"
+REMOTE=$(find_remote)
+
+#######################################
+# Test Step Functions
+#######################################
+set_test_env() {
+
+  TEST_NAME=$(basename $BASH_SOURCE)
+  TEST_DIR=$(realpath "test.tmp/$TEST_NAME")
+
+  rm -frv $TEST_DIR
+  ./setup $TEST_DIR
+
+  export PATH="$TEST_DIR:$PATH"
+  export VMU_HOME=$PWD
+  . mp-calls
+}
+
+remove_vms() {
+  ssh-keygen -R "[$HOST_IP]:2222"
+  local host_found=$(mp-info-ip $HOST_VM)
+  if [ $host_found ]; then
+    echo "$HOST_VM found."
+    multipass exec $HOST_VM -- bash -c "
+      . vmu-calls
+      mp-delete $GUEST_VM -pv
+      mp-delete $JENKINS_VM -pv
+    " $GUEST_VM $JENKINS_VM
+    mp-delete $HOST_VM -pv
+  else
+    echo "$HOST_VM not found."
+  fi
+  echo
+  echo "Test-VMs purged."
+}
+
+get_dev-vm_cmd() {
+  local command=( "dev-vm"  )
+  command+=( "-n \"John Doe\"" )
+  command+=( "-a johndoe@example.com" )
+  command+=( "-i $HOST_IP" )
+  if [ $REMOTE ] && [ "$REMOTE" != "origin/main" ]; then
+    command+=( "-t $REMOTE" )
+  fi
+  command+=( "$HOST_VM" )
+  echo "${command[@]}"
+}
+
+test_launch-vm-agent() {
+  multipass exec $HOST_VM -- bash -c "
+    launch-vm-agent \
+      --name $GUEST_VM \
+      --cpus 2 \
+      --mem 2G \
+      --disk 10G \
+      --host-ip $HOST_IP \
+      --vm-ip $GUEST_IP
+  " $GUEST_VM $HOST_IP $GUEST_IP
+}
+
+test_launch-vm-jenkins() {
+  multipass exec $HOST_VM -- bash -c "
+    launch-vm-jenkins \
+      --host-ip $HOST_IP \
+      --vm-ip $JENKINS_IP \
+      --tag $JENKINS_TAG \
+      $JENKINS_VM
+  " $HOST_IP $JENKINS_IP $JENKINS_TAG $JENKINS_VM
+}
+
+enable_ssh_to_guest() {
+
+  local hosts=~/.ssh/known_hosts
+  local public_key=$(cat ~/.ssh/id_ed25519.pub)
+
+  multipass exec $HOST_VM -- bash -c "
+    set -e
+
+    multipass exec $GUEST_VM -- bash -c '
+      echo $public_key >> ~/.ssh/authorized_keys
+    ' $public_key
+
+  " $GUEST_VM $public_key
+
+  echo "Adding a key of the VM:$GUEST_VM to $hosts of the test user .."
+  ssh-keyscan \
+    -H \
+    -t ed25519 \
+    -T 30 \
+    -p 2222 \
+    $HOST_IP >> $hosts
+}
+
+#######################################
+# Test Case Execution
+#######################################
+
+tstep "Set up the test environment" set_test_env
+tstep "Remove test VMs" remove_vms
+
+tname="Test the dev-vm"
+tname+=$'\n'"(to create VM:$HOST_VM with the IP:$HOST_IP)."
+tcase "$tname" eval $(get_dev-vm_cmd)
+
+tname="Test the launch-vm-agent"
+tname+=$'\n'"(to create VM:$GUEST_VM inside the VM:$HOST_VM)"
+tcase "$tname" test_launch-vm-agent
+
+tname="Test the launch-vm-jenkins"
+tname+=$'\n'"(to host Jenkins on VM:$JENKINS_VM inside the VM:$HOST_VM)"
+tcase "$tname" test_launch-vm-jenkins
+
+sname="Authorize the public key of the test user on the VM:$GUEST_VM"
+tstep "$sname" enable_ssh_to_guest
+
+tsummary
+
+echo
+echo "You should be able to connect to the VM:$HOST_VM:"
+echo "$ ssh ubuntu@$HOST_IP"
+echo
+echo "You should be able to connect to the VM:$GUEST_VM:"
+echo "$ ssh -p 2222 ubuntu@$HOST_IP"

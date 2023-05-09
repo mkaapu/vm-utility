@@ -1,0 +1,27 @@
+# Helper functions related to git repositories
+
+#######################################
+# Find remote branch a current local git branch is tracking.
+# Outputs:
+#   0 when the tracking branch is found, non-zero otherwise.
+#   1 when no remote repository is configured.
+#   2 when no matching refs are found in the remote repository.
+#   If the tracking branch is found, it is written to stdout.
+#######################################
+find_remote() {
+  local value=1
+  # symbolic ref to a branch the working tree is on
+  local ref=$(git symbolic-ref -q HEAD)
+  # the 'git for-each-ref' format to display the remote-tracking branch
+  local format='--format=%(upstream:short)'
+  local track=$(git for-each-ref $format $ref)
+  if [ $track ]; then
+    local remote=${track%/*}
+    local branch=${track#*/}
+    # check that the remote-tracking branch actually exists
+    git ls-remote --exit-code --heads $remote $branch >/dev/null 2>&1
+    value=$?
+    if [ $value -eq 0 ]; then echo $track; fi
+  fi
+  return $value
+}

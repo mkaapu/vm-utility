@@ -129,7 +129,7 @@ unset_config() {
 #   Key
 #   Configuration file
 # Outputs
-#   0 if key was removed, non-zero otherwise.
+#   0 if key was found, non-zero otherwise.
 #   Writes the value to stdout.
 #######################################
 get_config() {

@@ -38,6 +38,9 @@ DELETE_ALL=false
 # If true, VM instances and all their data will be purged permanently
 PURGE=false
 
+# Quiet mode without usage with errors
+QUIET=false
+
 #######################################
 # FUNCTIONS
 #######################################
@@ -82,8 +85,8 @@ usage() {
 # Handling command line arguments
 #######################################
 if ! OPTS="$(getopt \
-  --longoptions help,verbose,all,purge \
-  --options hvp \
+  --longoptions help,verbose,all,purge,quiet \
+  --options hvpq \
   --name "$(basename "$0")" \
   -- "$@"
 )"; then
@@ -107,6 +110,10 @@ while true; do
       ;;
     --purge|-p)
       PURGE=true
+      shift
+      ;;
+    --quiet|-q)
+      QUIET=true
       shift
       ;;
     --)
@@ -133,7 +140,7 @@ fi
 
 if [ ${#INSTANCES[@]} -eq 0 ]; then
   echo "Name argument or --all is required"
-  usage
+  if ! $QUIET; then usage; fi
   exit 1
 fi
 
