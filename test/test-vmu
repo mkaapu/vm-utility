@@ -29,12 +29,13 @@ REMOTE=$(find_remote)
 set_test_env() {
 
   TEST_NAME=$(basename $BASH_SOURCE)
-  TEST_DIR=$(realpath "test.tmp/$TEST_NAME")
+  TEST_DIR=test.tmp/$TEST_NAME
 
   rm -frv $TEST_DIR
   ./setup $TEST_DIR
 
-  export PATH="$TEST_DIR:$PATH"
+  TEST_PATH=$(realpath $TEST_DIR)
+  export PATH="${TEST_PATH}:${PATH}"
   export VMU_HOME=$PWD
   . mp-calls
 }
