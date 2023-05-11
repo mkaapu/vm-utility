@@ -3,6 +3,7 @@
 NAME=
 MAIL=
 EDIT=
+SSH=false
 
 usage() {
   echo "Usage: $0 [options]"
@@ -16,13 +17,16 @@ usage() {
   echo "  -h, --help                    Displays help on commandline options"
   echo "  -a, --email <user.email>      Your email address"
   echo "  -e, --editor <core.editor>    Your text editor"
+  echo "  -s, --ssh                     Access GitHub repositories via SSH"
+  echo "                                always replacing HTTPS URLs with SSH"
+  echo "                                ones"
   echo "Arguments:"
   echo "  \"User Name\"                   Your name"
 }
 
 if ! OPTS="$(getopt \
-  --longoptions help,name:,email:,editor: \
-  --options hn:a:e: \
+  --longoptions help,name:,email:,editor:,ssh \
+  --options hn:a:e:s \
   --name "$(basename "$0")" \
   -- "$@"
 )"; then
@@ -35,6 +39,7 @@ while true; do
     --help|-h) usage; exit ;;
     --email|-a) MAIL="$2"; shift 2 ;;
     --editor|-e) EDIT="$2"; shift 2 ;;
+    --ssh|-s) SSH=true; shift ;;
     --) shift; break ;;
     *) echo "DEBUG: No implementation for the option $1" ; exit 1 ;;
   esac
@@ -55,4 +60,8 @@ if [ "$MAIL" ]; then
 fi
 if [ "$EDIT" ]; then
   git config --global core.editor $EDIT
+fi
+if $SSH; then
+  git config \
+    --global url.ssh://git@github.com/.insteadOf https://github.com/
 fi

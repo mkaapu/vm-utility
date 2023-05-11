@@ -203,6 +203,7 @@ fi
 if [ $EDIT ]; then
   GIT_SETUP+=( "-e $EDIT" )
 fi
+GIT_SETUP+=( "--ssh" )
 GIT_SETUP+=( "\"$NAME\"" )
 eval "${GIT_SETUP[@]}"
 git config --list --show-origin
