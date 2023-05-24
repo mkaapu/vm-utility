@@ -30,6 +30,9 @@ NAME=jenkins-docker
 # Name for a bridge network created in Docker
 NETWORK=jenkins
 
+# Docker engine creates a subnetwork for the network by default
+SUBNET=
+
 # Makes the container available with this hostname within the $NETWORK
 NET_ALIAS=docker
 
@@ -89,6 +92,9 @@ usage() {
   echo "  -d, --detach                                  Runs the container in the background."
   echo "  --network <network>                           Creates the bridge network in Docker with this name."
   echo "                                                Default: jenkins"
+  echo "  --subnet <subnet>                             Subnet for the bridge network."
+  echo "                                                Docker engine creates a subnetwork by default"
+  echo "                                                which can be overwritten with this option."
   echo "  --hostname <alias>                            Makes the container availabe with this hostname."
   echo "                                                within the bridge network (--network option)"
   echo "                                                Default: docker"
@@ -118,7 +124,7 @@ usage() {
 #######################################
 
 if ! OPTS="$(getopt \
-  --longoptions help,rm,detach,network:,hostname:,cert-volume:,\
+  --longoptions help,rm,detach,network:,subnet:,hostname:,cert-volume:,\
 home-volume:,port:,env:,volume:,publish: \
   --options hde:v:p: \
   --name "$(basename "$0")" \
@@ -136,6 +142,7 @@ while true; do
     # Runs the Docker container in the background.
     --detach|-d) RUN+=( "--detach" ); shift ;;
     --network) NETWORK="$2"; shift 2 ;;
+    --subnet) SUBNET="--subnet=${2}"; shift 2 ;;
     --hostname) NET_ALIAS="$2"; shift 2 ;;
     --cert-volume) CERT_VOLUME="$2"; shift 2 ;;
     --home-volume) JENKINS_DATA="$2"; shift 2 ;;
@@ -163,12 +170,11 @@ fi
 
 echo
 echo "Creating a bridge network named '$NETWORK' in Docker.."
-docker network create $NETWORK
+docker network create $SUBNET $NETWORK
 
 echo
 echo "Downloading and running the docker:dind image in order to execute\
  Docker commands inside Jenkins nodes.."
-RUN+=( "" )
 # Running Docker in Docker currently requires privileged access
 RUN+=( "--privileged" )
 RUN+=( "--name $NAME" )
