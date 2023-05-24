@@ -71,6 +71,10 @@ set_config() {
 
   # create a configuration file if it does not exist yet
   if [ ! -f $file ]; then
+    local dir="$(dirname "${file}")"
+    if [ $dir ]; then
+      mkdir -p $dir
+    fi
     touch $file
   fi
 
