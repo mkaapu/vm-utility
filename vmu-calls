@@ -142,12 +142,14 @@ get_config() {
   local key=$1
   local file=$2
 
-  while read line; do
-    if [ ${line%=*} == $key ]; then
-      echo ${line#*=}
-      return 0
-    fi
-  done < $file
+  if [ -f $file ]; then
+    while read line; do
+      if [ ${line%=*} == $key ]; then
+        echo ${line#*=}
+        return 0
+      fi
+    done < $file
+  fi
   return 1
 }
 
