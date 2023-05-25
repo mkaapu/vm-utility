@@ -29,6 +29,11 @@ set -e
 . mp-calls
 
 #######################################
+# Set VMU environment
+#######################################
+if ! set_env; then echo "VMU Environment is not set."; exit 1; fi
+
+#######################################
 # DEFAULT VALUES
 #######################################
 
