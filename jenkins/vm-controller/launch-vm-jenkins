@@ -40,6 +40,7 @@ HOST_IP=0.0.0.0
 VM_IP=10.10.10.10
 TAG=latest
 NETWORK=jenkins
+SUBNET=10.10.0.0/16
 CONTAINER=jenkins-blueocean
 DIND_CONTAINER=jenkins-docker
 DIND_HOST=docker
@@ -93,6 +94,8 @@ usage() {
   echo "  --network <network>           Creates the bridge network in Docker"
   echo "                                with this name"
   echo "                                Default: jenkins"
+  echo "  --subnet <subnet>             A Subnet for the bridge network"
+  echo "                                Default: 10.10.0.0/16"
   echo "  --dind-name <name>            The name of the Docker in Docker"
   echo "                                (docker:dind) container"
   echo "                                Default: jenkins-docker"
@@ -131,8 +134,8 @@ usage() {
 
 if ! OPTS="$(getopt \
   --longoptions help,cpus:,disk:,mem:,vm-ip:,host-ip:,port:,tag:,name:,\
-network:,dind-name:,dind-host:,dind-port:,jenkins-port:,agent-port:,\
-home-volume:,cert-volume: \
+network:,subnet:,dind-name:,dind-host:,dind-port:,jenkins-port:,\
+agent-port:,home-volume:,cert-volume: \
   --options hc:d:m:v:i:p:t:n: \
   --name "$(basename "$0")" \
   -- "$@"
@@ -153,6 +156,7 @@ while true; do
     --tag|-t) TAG="$2"; shift 2 ;;
     --name|-n) CONTAINER="$2"; shift 2 ;;
     --network) NETWORK="$2"; shift 2 ;;
+    --subnet) SUBNET="$2"; shift 2 ;;
     --dind-name) DIND_CONTAINER="$2"; shift 2 ;;
     --dind-host) DIND_HOST="$2"; shift 2 ;;
     --dind-port) DIND_PORT="$2"; shift 2 ;;
@@ -202,6 +206,7 @@ multipass exec $NAME -- bash -c "
     --rm \
     --detach \
     --network $NETWORK \
+    --subnet $SUBNET \
     --hostname $DIND_HOST \
     --cert-volume $CERT_VOLUME \
     --home-volume $HOME_VOLUME \
