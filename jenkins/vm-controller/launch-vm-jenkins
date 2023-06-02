@@ -245,7 +245,7 @@ echo "To access the Docker logs of the Jenkins container:"
 echo "$ multipass exec $NAME -- docker logs $CONTAINER"
 
 echo
-echo "To access a new Jenkins instance:"
+echo "To access the Jenkins instance:"
 if [ "$HOST_IP" == "0.0.0.0" ]; then
   echo "http://localhost:$PORT"
 else
