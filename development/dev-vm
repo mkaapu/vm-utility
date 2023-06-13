@@ -121,7 +121,9 @@ ARGCOUNT=${#ARGS[@]}
 if [ "$ARGCOUNT" -eq "1" ]; then
   VM_NAME="${ARGS[0]}"
 elif [ "$ARGCOUNT" -gt "1" ]; then
-  ERRORS+=("Too many arguments supplied.")
+  echo "Too many arguments supplied."
+  usage
+  exit 1
 fi
 
 #######################################
