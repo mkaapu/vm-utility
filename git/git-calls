@@ -1,14 +1,14 @@
 # Helper functions related to git repositories
 
 #######################################
-# Find remote branch a current local git branch is tracking.
+# Get the remote branch a current local git branch is tracking.
 # Outputs:
 #   0 when the tracking branch is found, non-zero otherwise.
 #   1 when no remote repository is configured.
 #   2 when no matching refs are found in the remote repository.
 #   If the tracking branch is found, it is written to stdout.
 #######################################
-find_remote() {
+git-remote-branch() {
   local value=1
   # symbolic ref to a branch the working tree is on
   local ref=$(git symbolic-ref -q HEAD)
@@ -24,4 +24,50 @@ find_remote() {
     if [ $value -eq 0 ]; then echo $track; fi
   fi
   return $value
+}
+
+#######################################
+# Get the default branch from the remote repository.
+# Arguments:
+#   Remote repository (defaults to 'origin' if left empty)
+# Outputs:
+#   0 when main branch is remote, non-zero otherwise.
+#   If the default branch is found, it is written to stdout.
+#######################################
+git-default-branch() {
+  local value=0
+  local remote=origin
+  local head=
+  if [ $1 ]; then remote=$1; fi
+  head=$(git rev-parse --abbrev-ref $remote/HEAD 2>/dev/null)
+  value=$?
+  if [ $value -eq 0 ]; then basename $head; fi
+  return $value
+}
+
+#######################################
+# Checks if a local branch exists.
+# Arguments:
+#   Branch
+# Outputs:
+#   0 if the branch exists, non-zero otherwise.
+#######################################
+git-branch-exists() {
+  local branch=$1
+  git show-ref --verify -q refs/heads/$branch
+}
+
+#######################################
+# Checks if an upstream branch exists in a remote repository.
+# Arguments:
+#   Branch
+#   Remote repository (defaults to 'origin' if left empty)
+# Outputs:
+#   0 if the upstream branch exists, non-zero otherwise.
+#######################################
+git-upstream-exists() {
+  local branch=$1
+  local remote=origin
+  if [ $2 ]; then remote=$2; fi
+  git show-ref --verify -q refs/remotes/$remote/$branch
 }

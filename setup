@@ -103,6 +103,8 @@ mkdir -p $BIN_DIR
 ln -fsv $INTERACTIVE -t $BIN_DIR \
   $VMU_HOME/vmu-config \
   $VMU_HOME/vmu-calls \
+  $VMU_HOME/git/git-calls \
+  $VMU_HOME/git/git-checkout \
   $VMU_HOME/network/net-calls \
   $VMU_HOME/multipass/mp-calls \
   $VMU_HOME/multipass/mp-ssh \
