@@ -60,12 +60,12 @@ usage() {
   echo "$ $0 --branch stable /projects/my-project"
   echo
   echo "Options:"
-  echo "  -h, --help    Displays help on commandline options."
-  echo "  -b, --branch  A new branch to create or an existing branch"
-  echo "                to track or checkout."
-  echo "  -r, --remote  A remote repository to track."
-  echo "                Default: origin"
-  echo "  -u, --url     The URL or path of the git repository to clone."
+  echo "  -h, --help                    Displays help on commandline options."
+  echo "  -b, --branch <branch>         A new branch to create or an existing branch"
+  echo "                                to track or checkout."
+  echo "  -r, --remote <repository>     A remote repository to track."
+  echo "                                Default: origin"
+  echo "  -u, --url <url>               The URL or path of the git repository to clone."
   echo
   echo "Arguments:"
   echo "  directory     The path to a clone of a git repository"
