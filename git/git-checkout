@@ -47,9 +47,9 @@ usage() {
   echo "Checkout a git repository"
   echo
   echo "Clone a repository into a new directory"
-  echo "$ $0 --clone https://github.com/mkaapu/vm-utility.git"
+  echo "$ $0 --url https://github.com/mkaapu/vm-utility.git"
   echo "OR"
-  echo "$ $0 -c https://github.com/mkaapu/vm-utility.git prj/vm-utility"
+  echo "$ $0 -u https://github.com/mkaapu/vm-utility.git prj/vm-utility"
   echo
   echo "Checkout and pull changes in an existing git repository:"
   echo "$ cd /projects/my-project"
