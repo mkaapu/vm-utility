@@ -51,5 +51,5 @@ if $OVERWRITE || [ ! -f ~/.nanorc ]; then
   echo set guidestripe $GUIDESTRIPE >> ~/.nanorc
 else
   echo ~/.nanorc found. Not overwriting.
-  echo Use --overwrite option to overwrite existing configuration file.
+  echo To overwrite: $ $0 --overwrite
 fi
