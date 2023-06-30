@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+#
+# Set git based development environment
+#
+# - Sets up your identity for git (--name and --email options)
+#   and configures the default text editor (--editor option) for Git.
+# - Creates a simple initial ~/.nanorc file for nano (--nano option).
+# - Generates a new SSH key and prints the public key (--ssh option).
+# - Forces access to GitHub repositories via SSH always replacing HTTPS
+#   URLs with SSH ones (--ssh option)
+#
+# Check usage() fuction below for more usage options
+
+#######################################
+# Shell options
+#######################################
+set -e
+
+#######################################
+# DEFAULT VALUES
+#######################################
+
+MAIL=
+EDIT="nano"
+CONFIG_NANO=false
+USE_SSH=false
+
+#######################################
+# FUNCTIONS
+#######################################
+
+#######################################
+# Usage
+# Arguments:
+#   None
+# Outputs:
+#   Writes usage to stdout
+#######################################
+usage() {
+  echo "Usage: $0 [options] \"User Name\""
+  echo
+  echo "Sets git/GitHub configuration and environment for development."
+  echo
+  echo "Example:"
+  echo "$ $0 --email spiderman@gmail.com --nano --ssh \"Peter Parker\""
+  echo
+  echo "Options:"
+  echo "  -h, --help                    Displays help on commandline options"
+  echo "  -a, --email <user.email>      Your email address (for git config)"
+  echo "  -e, --editor <core.editor>    Your text editor (for git config)"
+  echo "                                Default: nano"
+  echo "  -n, --nano                    Creates a simple initial ~/.nanorc"
+  echo "                                configuration file for nano editor."
+  echo "                                An existing file is not overwritten."
+  echo "  -s, --ssh                     A new SSH key is generated"
+  echo "                                if ~/.ssh/id_ed25519 is not found."
+  echo "                                The public key is printed."
+  echo "                                Also access to GitHub repositories"
+  echo "                                is forced via SSH by always"
+  echo "                                replacing HTTPS URLs with SSH ones"
+  echo "                                (git config --global)."
+  echo
+  echo "Arguments:"
+  echo "  \"User Name\"                   Your name"
+}
+
+#######################################
+# EXECUTION
+#######################################
+
+#######################################
+# Handling command line arguments
+#######################################
+
+if [ $# -eq 0 ]; then
+  echo "$0: No arguments supplied."
+  usage
+  exit 1
+fi
+if ! OPTS="$(getopt \
+  --longoptions help,email:,editor:,nano,ssh \
+  --options ha:e:ns \
+  --name "$(basename "$0")" \
+  -- "$@"
+)"; then
+  usage
+  exit 1
+fi
+eval set -- "$OPTS"
+while true; do
+  case "$1" in
+    --help|-h) usage; exit ;;
+    --email|-a) MAIL="$2"; shift 2 ;;
+    --editor|-e) EDIT="$2"; shift 2 ;;
+    --nano|-n) CONFIG_NANO=true; shift ;;
+    --ssh|-s) USE_SSH=true; shift ;;
+    --) shift; break ;;
+    *) echo "DEBUG: No implementation for the option $1" ; exit 1 ;;
+  esac
+done
+ARGS=("$@")
+ARGCOUNT=${#ARGS[@]}
+if [ "${ARGCOUNT}" -gt "1" ]; then
+  echo "$0: Unexpected arguments supplied."
+  usage
+  exit 1
+fi
+
+#######################################
+# Main Execution
+#######################################
+
+echo
+echo "Customizing Git environment.."
+if (( ${ARGCOUNT} )); then
+  git config --global user.name "$ARGS"
+fi
+if [ $MAIL ]; then
+  git config --global user.email $MAIL
+fi
+if [ $EDIT ]; then
+  git config --global core.editor $EDIT
+fi
+git config --list --show-origin
+
+if $CONFIG_NANO; then
+  echo
+  echo "Configuring Nano editor.."
+  config-nano
+fi
+
+if $USE_SSH; then
+  if [ ! -f ~/.ssh/id_ed25519.pub ]; then
+    echo
+    echo "Generating a new SSH key.."
+    ssh-keygen -q -t ed25519 -f ~/.ssh/id_ed25519 -N ""
+  fi
+  echo
+  echo "Add the public SSH key:"
+  cat ~/.ssh/id_ed25519.pub
+  echo "to:"
+  echo "https://github.com/settings/keys"
+  echo "and"
+  echo "you can access and write data in GitHub repositories using SSH."
+fi

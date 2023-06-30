@@ -6,7 +6,7 @@ EDIT=
 SSH=false
 
 usage() {
-  echo "Usage: $0 [options]"
+  echo "Usage: $0 [options] \"User Name\""
   echo
   echo "Sets git configuration for a developer."
   echo
@@ -47,7 +47,9 @@ done
 ARGS=("$@")
 ARGCOUNT=${#ARGS[@]}
 if [ "${ARGCOUNT}" -eq "0" ]; then
-  echo "$0: No arguments supplied."
+  echo "$0: No user name given for git configuration."
+  usage
+  exit 1
 elif [ "${ARGCOUNT}" -gt "1" ]; then
   echo "$0: Unexpected arguments supplied."
   usage
