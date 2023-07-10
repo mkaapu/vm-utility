@@ -1,48 +1,40 @@
 # Helper functions related to git repositories
 
 #######################################
-# Get the remote branch a current local git branch is tracking.
+# Get the remote-tracking branch of the current branch.
 # Outputs:
 #   0 when the tracking branch is found, non-zero otherwise.
-#   1 when no remote repository is configured.
-#   2 when no matching refs are found in the remote repository.
-#   If the tracking branch is found, it is written to stdout.
+#   If the tracking branch is found, it is written to stdout
+#   in the following format: <remote>/<branch>
 #######################################
-git-remote-branch() {
-  local value=1
+git-tracking-branch() {
   # symbolic ref to a branch the working tree is on
   local ref=$(git symbolic-ref -q HEAD)
   # the 'git for-each-ref' format to display the remote-tracking branch
   local format='--format=%(upstream:short)'
-  local track=$(git for-each-ref $format $ref)
+  git for-each-ref $format $ref
+}
+
+#######################################
+# Get the name of the remote branch the current branch is tracking.
+# Outputs:
+#   0 when the tracking branch is found, non-zero otherwise.
+#   1 when no remote repository is configured.
+#   2 when no matching refs are found in the remote repository.
+#   If the remote branch is found, the branch name is written to stdout.
+#######################################
+git-remote-branch() {
+  local status=1
+  local track=$(git-tracking-branch)
   if [ $track ]; then
     local remote=${track%/*}
     local branch=${track#*/}
     # check that the remote-tracking branch actually exists
     git ls-remote --exit-code --heads $remote $branch >/dev/null 2>&1
-    value=$?
-    if [ $value -eq 0 ]; then echo $track; fi
+    status=$?
+    if [ $status -eq 0 ]; then echo $track; fi
   fi
-  return $value
-}
-
-#######################################
-# Get the default branch from the remote repository.
-# Arguments:
-#   Remote repository (defaults to 'origin' if left empty)
-# Outputs:
-#   0 when main branch is remote, non-zero otherwise.
-#   If the default branch is found, it is written to stdout.
-#######################################
-git-default-branch() {
-  local value=0
-  local remote=origin
-  local head=
-  if [ $1 ]; then remote=$1; fi
-  head=$(git rev-parse --abbrev-ref $remote/HEAD 2>/dev/null)
-  value=$?
-  if [ $value -eq 0 ]; then basename $head; fi
-  return $value
+  return $status
 }
 
 #######################################
@@ -70,4 +62,202 @@ git-upstream-exists() {
   local remote=origin
   if [ $2 ]; then remote=$2; fi
   git show-ref --verify -q refs/remotes/$remote/$branch
+}
+
+#######################################
+# Get the default branch of the repository.
+#
+# Order to determine the default branch:
+# 1. The default remote branch that HEAD points to
+# 2. The only branch in local repository
+# 3. The 'main' branch if it exists
+# 4. The 'master' branch if it exists
+# 5. The value of the 'git config init.defaultBranch'
+# 6. 'master'
+#
+# Arguments:
+#   Remote repository (defaults to 'origin' if left empty)
+# Outputs:
+#   0 when main branch is found from remote, non-zero otherwise.
+#   If the default branch is found, it is written to stdout.
+#######################################
+git-default-branch() {
+  local status=0
+  local remote=origin
+  local track=
+  local head=
+  local branch_count=$(git branch | wc -l)
+  if [ $1 ]; then
+    remote=$1
+    track=$1
+  fi
+  head=$(git rev-parse --abbrev-ref $remote/HEAD 2>/dev/null)
+  status=$?
+  if [ $status -eq 0 ]; then
+    basename $head
+  elif [ "$branch_count" -eq "1" ]; then
+    git for-each-ref --format='%(refname:short)' refs/heads/
+  elif [ $track ] && git-upstream-exists main $remote; then
+    echo main
+  elif [ $track ] && git-upstream-exists master $remote; then
+    echo master
+  elif git-branch-exists main; then
+    echo main
+  elif git-branch-exists master; then
+    echo master
+  else
+    local conf=$(git config init.defaultBranch)
+    if [ $conf ]; then
+      echo $conf
+    else
+      echo master
+    fi
+  fi
+  return $status
+}
+
+#######################################
+# Checks out a git repository.
+#
+# If a local clone is not found, the repository will be cloned.
+# If the specified branch is found from the remote repository,
+# a local branch is fetched and integrated with it.
+# If the specified local branch exists without tracking remote branch,
+# the branch will be checked out.
+# If the specified branch does not exist, default branch is fetched
+# and integrated and a new local branch is checked out from the HEAD
+# of the default branch.
+#
+# Arguments:
+#   The URL or path of the git repository to check out
+#   Branch
+#   Remote repository (default: origin)
+#   The path of the repository
+# Outputs:
+#   0 if the operation succeeds, non-zero otherwise.
+#######################################
+git-checkout() {
+
+  local clone_url=$1
+  local branch=$2
+  local remote=$3
+  local clone_dir=$4
+
+  if [ $clone_url ] && [ -z $clone_dir ]; then
+    local git_repo=$(basename $clone_url)
+    clone_dir=$PWD/${git_repo%.git}
+  elif [ -z $clone_url ] && [ -z $clone_dir ]; then
+    clone_dir=$PWD
+  fi
+
+  if [ -d $clone_dir/.git ]; then
+    cd $clone_dir
+    pwd
+    if [ -z $branch ]; then
+      branch=$(git-default-branch)
+    fi
+    if [ $remote ] && [ $clone_url ] && \
+       ! git ls-remote $remote >/dev/null 2>&1; then
+      git-checkout-remote "$remote" "$clone_url" "$branch"
+    elif git-upstream-exists $branch $remote; then
+      if [ -z $remote ]; then
+        remote=origin
+      fi
+      git-track-upstream $remote $branch
+    elif [ $remote ] && [ -z "$(git remote | grep $remote)" ]; then
+      echo No branch:$branch found from the remote:$remote repository.
+      return 1
+    elif [ $remote ]; then
+      git-track-upstream $remote $branch
+    elif git-branch-exists $branch; then
+      git checkout $branch
+    else
+      git checkout $(git-default-branch) || return $?
+      git pull --ff-only || return $?
+      git checkout -b $branch
+    fi
+  elif [ -z $clone_url ]; then
+    echo "No repository to pull were found."
+    echo "Directory: $clone_dir"
+    echo "Repository URL: $clone_url"
+    return 1
+  elif [ "$remote" == "origin" ] || [ -z $remote ]; then
+    git clone $clone_url $clone_dir || return $?
+    cd $clone_dir
+    if [ $branch ] && [ "$branch" != "$(git-default-branch)" ]; then
+      if git-upstream-exists $branch; then
+        git checkout $branch
+      else
+        git checkout -b $branch
+      fi
+    fi
+  else
+    mkdir -p $clone_dir
+    cd $clone_dir
+    git init || return $?
+    git-checkout-remote "$remote" "$clone_url" "$branch"
+  fi
+
+}
+
+#######################################
+# Adds a remote for the repository and checks out a branch from it.
+# Arguments:
+#   Remote repository
+#   The URL or path of the remote repository
+#   Branch
+# Outputs:
+#   0 if the operation succeeds, non-zero otherwise.
+#######################################
+git-checkout-remote() {
+  local remote=$1
+  local clone_url=$2
+  local branch=$3
+  git remote add $remote $clone_url || return $?
+  git fetch $remote || return $?
+  if [ -z $branch ]; then branch=$(git-default-branch $remote); fi
+  git-track-upstream $remote $branch
+}
+
+#######################################
+# Sets and checks out a remote-tracking branch.
+#
+# If no local branch with the same name is found
+# and the remote branch exists, it will be checked out.
+# If a local branch with the given name already exists,
+# its tracking branch is set from the given remote
+# and the branch is fetched and integrated.
+# If branch does not exist, the default branch from the remote
+# is checked out and then a new branch is checked out from its HEAD.
+#
+# Arguments:
+#   Remote repository
+#   Branch
+# Outputs:
+#   0 if the operation succeeds, non-zero otherwise.
+#######################################
+git-track-upstream() {
+  local remote=$1
+  local branch=$2
+  if git-branch-exists $branch; then
+    git checkout $branch || return $?
+    if [ "$(git-tracking-branch)" != "$remote/$branch" ]; then
+      git branch -u $remote/$branch $branch || return $?
+    fi
+    git pull --ff-only
+  elif git-upstream-exists $branch $remote; then
+    git checkout -t $remote/$branch
+  else
+    local default=$(git-default-branch $remote)
+    if git-branch-exists $default; then
+      git checkout $default || return $?
+      if [ "$(git-tracking-branch)" != "$remote/$default" ]; then
+        git branch -u $remote/$default $default || return $?
+      fi
+      git pull --ff-only || return $?
+    else
+      git checkout -t $remote/$default || return $?
+    fi
+    git checkout -b $branch
+  fi
 }
