@@ -9,4 +9,4 @@ Type=oneshot
 ExecStart=ip route replace IP/24 dev mpqemubr0
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=multi-user.target network.target snap.multipass.multipassd.service
