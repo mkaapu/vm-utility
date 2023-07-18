@@ -115,11 +115,15 @@ echo "Customizing Git environment.."
 if (( ${ARGCOUNT} )); then
   git config --global user.name "$ARGS"
 fi
-if [ $MAIL ]; then
+if [ "$MAIL" ]; then
   git config --global user.email $MAIL
 fi
-if [ $EDIT ]; then
+if [ "$EDIT" ]; then
   git config --global core.editor $EDIT
+fi
+if $USE_SSH; then
+  git config \
+    --global url.ssh://git@github.com/.insteadOf https://github.com/
 fi
 git config --list --show-origin
 
