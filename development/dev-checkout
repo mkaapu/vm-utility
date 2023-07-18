@@ -168,13 +168,13 @@ if ! git-checkout "$CLONE_URL" "$BRANCH" "$REMOTE" "$CLONE_DIR"; then
 fi
 
 # Set up development environment based on given options.
-if [ $NAME ]; then
+if [ "$NAME" ]; then
   ENV_SETUP_ARGS+=( "\"$NAME\"" )
 fi
-if [ $EMAIL ]; then
-  ENV_SETUP_ARGS+=( "-a $EMAIL" )
+if [ "$MAIL" ]; then
+  ENV_SETUP_ARGS+=( "-a $MAIL" )
 fi
-if [ $EDIT ]; then
+if [ "$EDIT" ]; then
   ENV_SETUP_ARGS+=( "-e $EDIT" )
 fi
 if $USE_NANO; then
@@ -184,5 +184,5 @@ if $USE_SSH; then
   ENV_SETUP_ARGS+=( "-s" )
 fi
 if (( ${#ENV_SETUP_ARGS[@]} )); then
-  dev-setup "${ENV_SETUP_ARGS[@]}"
+  eval "dev-setup ${ENV_SETUP_ARGS[@]}"
 fi
