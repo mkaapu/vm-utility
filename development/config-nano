@@ -51,5 +51,6 @@ if $OVERWRITE || [ ! -f ~/.nanorc ]; then
   echo set guidestripe $GUIDESTRIPE >> ~/.nanorc
 else
   echo ~/.nanorc found. Not overwriting.
-  echo To overwrite: $ $0 --overwrite
+  echo To overwrite:
+  echo $ $0 --overwrite
 fi
