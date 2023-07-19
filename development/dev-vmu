@@ -1,0 +1,157 @@
+#!/usr/bin/env bash
+#
+# Set VM-utility development environment.
+#
+# - Installs and sets up Multipass tools if not available.
+# - With --branch option, checkouts a new local vm-utility branch.
+# - With --remote option, sets a named remote repository to track.
+# - Sets up your identity (--name and --email options)
+# and configures the default text editor (--editor option) for Git.
+# - Creates a simple initial ~/.nanorc file for nano (--nano option).
+# - Generates a new SSH key, prints the public key and forces SSH access
+# (read/write) to the VM-utility GitHub repository (--ssh option).
+#
+set -e
+
+#######################################
+# Includes
+#######################################
+. vmu-calls
+. git-calls
+
+#######################################
+# ENVIRONMENT
+#######################################
+
+NAME=
+MAIL=
+EDIT="nano"
+USE_NANO=false
+USE_SSH=false
+BRANCH=
+REMOTE=
+CHECKOUT_ARGS=()
+ENV_SETUP_ARGS=()
+
+#######################################
+# USAGE
+#######################################
+
+usage() {
+  echo "Usage: $0 [options]"
+  echo
+  echo "Sets up development evironment for VM-utility."
+  echo
+  echo "Example of usage:"
+  echo "$ git clone https://github.com/mkaapu/vm-utility.git"
+  echo "$ vm-utility/setup ~/my-tools/vm-utility"
+  echo "$ $0 -n \"Peter Parker\" -a peter.parker@gmail.com -b web-dev"
+  echo
+  echo "Options:"
+  echo "  -h, --help                    Displays help on commandline options"
+  echo "  -n, --name \"<user.name>\"      \"Your name\" (for git config)"
+  echo "  -a, --email <user.email>      Your email address (for git config)"
+  echo "  -e, --editor <core.editor>    Your text editor (for git config)"
+  echo "                                Default: nano"
+  echo "  --nano                        Creates a simple initial ~/.nanorc"
+  echo "                                file"
+  echo "                                for nano editor."
+  echo "                                Note: Overwrites existing ~/.nanorc"
+  echo "  -s, --ssh                     A new SSH key is generated"
+  echo "                                if ~/.ssh/id_ed25519 is not found."
+  echo "                                The public key is printed."
+  echo "                                Also access to GitHub repositories"
+  echo "                                is forced via SSH by always"
+  echo "                                replacing HTTPS URLs with SSH ones"
+  echo "                                (git config --global)."
+  echo "  -b, --branch <branch>         A new branch to create or an existing"
+  echo "                                one to track or checkout"
+  echo "  -r, --remote <repository>     A Remote repository to track"
+  echo "                                Default: origin"
+}
+
+#######################################
+# EXECUTION
+#######################################
+
+#######################################
+# Handling command line arguments
+#######################################
+
+if ! OPTS="$(getopt \
+  --longoptions help,name:,email:,editor:,nano,ssh,branch:,remote: \
+  --options hn:a:e:sb:r: \
+  --name "$(basename "$0")" \
+  -- "$@"
+)"; then
+  usage
+  exit 1
+fi
+eval set -- "$OPTS"
+while true; do
+  case "$1" in
+    --help|-h) usage; exit ;;
+    --name|-n) NAME="$2"; shift 2 ;;
+    --email|-a) MAIL="$2"; shift 2 ;;
+    --editor|-e) EDIT="$2"; shift 2 ;;
+    --nano) USE_NANO=true; shift ;;
+    --ssh|-s) USE_SSH=true; shift ;;
+    --branch|-b) BRANCH="$2"; shift 2 ;;
+    --remote|-r) REMOTE="$2"; shift 2 ;;
+    --) shift; break ;;
+    *) echo "DEBUG: No implementation for the option $1" ; exit 1 ;;
+  esac
+done
+ARGS=("$@")
+ARGCOUNT=${#ARGS[@]}
+if [ "$ARGCOUNT" -gt "0" ]; then
+  echo "$0: Unexpected arguments supplied."
+  usage
+  exit 1
+fi
+
+#######################################
+# Main Execution
+#######################################
+
+# Set VMU_HOME
+if ! set_env; then echo "VMU Environment is not set."; exit 1; fi
+echo
+echo VMU_HOME:$VMU_HOME
+
+if [ $REMOTE ] || [ $BRANCH ]; then
+  echo
+  echo "Checking out VM-utility.."
+  if [ "$BRANCH" ]; then
+    CHECKOUT_ARGS+=( "--branch=$BRANCH" )
+  fi
+  if [ "$REMOTE" ]; then
+    CHECKOUT_ARGS+=( "--remote=$REMOTE" )
+    CHECKOUT_ARGS+=( "--url=https://github.com/mkaapu/vm-utility.git" )
+  fi
+  eval "dev-checkout ${CHECKOUT_ARGS[@]} $VMU_HOME"
+fi
+
+if ! pgrep -x "multipassd" > /dev/null; then
+  setup-multipass
+fi
+
+# Set up development environment based on given options.
+if [ "$NAME" ]; then
+  ENV_SETUP_ARGS+=( "$NAME" )
+fi
+if [ "$MAIL" ]; then
+  ENV_SETUP_ARGS+=( "--email=$MAIL" )
+fi
+if [ "$EDIT" ]; then
+  ENV_SETUP_ARGS+=( "--editor=$EDIT" )
+fi
+if $USE_NANO; then
+  ENV_SETUP_ARGS+=( "--nano" )
+fi
+if $USE_SSH; then
+  ENV_SETUP_ARGS+=( "--ssh" )
+fi
+if (( ${#ENV_SETUP_ARGS[@]} )); then
+  eval "dev-setup ${ENV_SETUP_ARGS[@]}"
+fi
