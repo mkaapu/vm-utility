@@ -61,7 +61,7 @@ usage() {
   echo "                                (git config --global)."
   echo
   echo "Arguments:"
-  echo "  \"User Name\"                   Your name"
+  echo "  \"User Name\"                   \"Your name\" (for git config)"
 }
 
 #######################################
