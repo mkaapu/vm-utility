@@ -138,7 +138,7 @@ fi
 
 # Set up development environment based on given options.
 if [ "$NAME" ]; then
-  ENV_SETUP_ARGS+=( "$NAME" )
+  ENV_SETUP_ARGS+=( "\"$NAME\"" )
 fi
 if [ "$MAIL" ]; then
   ENV_SETUP_ARGS+=( "--email=$MAIL" )
