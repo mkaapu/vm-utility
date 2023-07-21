@@ -8,31 +8,35 @@
 # - Creates a workspace directory and clones the vm-utility there.
 # - Sets up vm-utility and Multipass tools in the VM.
 # - With --branch option, checkouts a new local branch.
-# - With --track option, sets a remote-tracking branch.
+# - Creates a simple initial configuration file for nano.
 # - Sets up your identity (--name and --email options)
 # and configures the default text editor (--editor option) for Git.
-# - Creates a simple initial configuration file for nano.
 # - Generates a new SSH key on the instance and prints the public key.
+# - Forces access to GitHub repositories via SSH always replacing HTTPS
+# URLs with SSH ones in the VM.
 #
 set -e
+
+#######################################
+# Includes
+#######################################
+. vmu-calls
 
 #######################################
 # DEFAULT VALUES
 #######################################
 
-DIR=$(dirname "$0")
-NAME=
-MAIL=
-EDIT="nano"
-BRANCH=
-REMOTE=
 CPUS="4"
 DISK="128G"
 MEMORY="16G"
 VM_NAME="primary"
-BRANCH=
 MOUNT=
 IP=
+WORKSPACE=/home/ubuntu/workspace
+VMU_DIR=$WORKSPACE/vm-utility
+VMU_URL=https://github.com/mkaapu/vm-utility.git
+CHECKOUT_ARGS=( "--url=$VMU_URL" "$VMU_DIR" )
+SETUP_ARGS=( "--nano" "--ssh" )
 
 #######################################
 # USAGE
@@ -51,8 +55,8 @@ usage() {
   echo "  -n, --name \"<user.name>\"              \"Your name\" (for git config)"
   echo "  -a, --email <user.email>              Your email address (for git config)"
   echo "  -e, --editor <core.editor>            Your text editor (for git config)"
-  echo "  -b, --branch <branch>                 Name of a local branch to checkout"
-  echo "  -t, --track <remote>/<branch>         Name of a remote-tracking branch"
+  echo "                                        Default: nano"
+  echo "  -b, --branch <branch>                 Name of a branch to checkout"
   echo "  -c, --cpus <cpus>                     Numbers of CPUs to allocate."
   echo "                                        Minimum: 1, default: 4."
   echo "  -d, --disk <disk>                     Disk space to allocate. Positive"
@@ -89,9 +93,9 @@ usage() {
 #######################################
 
 if ! OPTS="$(getopt \
-  --longoptions help,name:,email:,editor:,branch:,track:,cpus:,disk:,\
+  --longoptions help,name:,email:,editor:,branch:,cpus:,disk:,\
 memory:,ip:,mount: \
-  --options hn:a:e:b:t:c:d:m:i: \
+  --options hn:a:e:b:c:d:m:i: \
   --name "$(basename "$0")" \
   -- "$@"
 )"; then
@@ -102,11 +106,10 @@ eval set -- "$OPTS"
 while true; do
   case "$1" in
     --help|-h) usage; exit ;;
-    --name|-n) NAME="$2"; shift 2 ;;
-    --email|-a) MAIL="$2"; shift 2 ;;
-    --editor|-e) EDIT="$2"; shift 2 ;;
-    --branch|-b) BRANCH="$2"; shift 2 ;;
-    --track|-t) REMOTE="$2"; shift 2 ;;
+    --name|-n) SETUP_ARGS+=( "--name=$2" ); shift 2 ;;
+    --email|-a) SETUP_ARGS+=( "--email=$2" ); shift 2 ;;
+    --editor|-e) SETUP_ARGS+=( "--editor=$2" ); shift 2 ;;
+    --branch|-b) CHECKOUT_ARGS+=( "--branch=$2" ); shift 2 ;;
     --cpus|-c) CPUS="$2"; shift 2 ;;
     --disk|-d) DISK="$2"; shift 2 ;;
     --memory|-m) MEMORY="$2"; shift 2 ;;
@@ -130,6 +133,9 @@ fi
 # Main Execution
 #######################################
 
+# Set VMU_HOME
+if ! set_env; then echo "VMU Environment is not set."; exit 1; fi
+
 # Install multipass if not installed
 # and wait that multipassd is running.
 setup-multipass
@@ -138,86 +144,28 @@ echo
 echo "Creating and launching the $VM_NAME instance.."
 LAUNCH=( "mp-launch -k -n $VM_NAME -c $CPUS -m $MEMORY -d $DISK" )
 if [ $IP ]; then
-  LAUNCH+=("-i $IP")
+  LAUNCH+=( "-i $IP" )
 fi
 if [ $MOUNT ];then
-  LAUNCH+=("--mount $MOUNT")
+  LAUNCH+=( "--mount $MOUNT" )
 fi
 ${LAUNCH[@]}
 
 echo
-echo "Setting up the $VM_NAME for development.."
-EXEC_ARGS+=( "$VM_NAME" )
-EXEC_ARGS+=( "$NAME" )
-EXEC_ARGS+=( "$MAIL" )
-EXEC_ARGS+=( "$EDIT" )
-EXEC_ARGS+=( "$BRANCH" )
-EXEC_ARGS+=( "$REMOTE" )
-multipass exec $VM_NAME -- bash -c ' # Run on the VM
-
-# VM environment
-VM_NAME=$0
-NAME=$1
-MAIL=$2
-EDIT=$3
-BRANCH=$4
-REMOTE=$5
-CHECKOUT=( "git checkout" )
-GIT_SETUP=( "config-git" )
-WORKSPACE=~/workspace
-
-mkdir $WORKSPACE
-cd $WORKSPACE
-echo "The workspace directory created: $WORKSPACE"
+echo "Setting up the VM:$VM_NAME for vm-utility development.."
 
 echo
 echo "Cloning vm-utility to the workspace from GitHub.."
-git clone https://github.com/mkaapu/vm-utility.git
-cd vm-utility
-
-if [ $BRANCH ] || [ $REMOTE ]; then
-  echo
-  echo "Setting up a local development branch.."
-  if [ $BRANCH ] && [ $REMOTE ]; then
-    CHECKOUT+=( "-b $BRANCH $REMOTE" )
-  elif [ $REMOTE ]; then
-    CHECKOUT+=( "--track $REMOTE" )
-  else
-    CHECKOUT+=( "-b $BRANCH" )
-  fi
-  ${CHECKOUT[@]}
-fi
+cat $VMU_HOME/git/git-calls $VMU_HOME/development/dev-checkout | \
+sed '/. git-calls/d' | \
+multipass exec $VM_NAME -- bash -s -- "${CHECKOUT_ARGS[@]}"
 
 echo
 echo "Installing vm-utility.."
-sudo ./setup
+multipass exec $VM_NAME -- sudo $VMU_DIR/setup
+multipass exec $VM_NAME -- vmu-config
 
-echo
-echo "Installing multipass.."
-setup-multipass
-
-echo
-echo "Customizing Git environment.."
-config-nano
-if [ $MAIL ]; then
-  GIT_SETUP+=( "-a $MAIL" )
-fi
-if [ $EDIT ]; then
-  GIT_SETUP+=( "-e $EDIT" )
-fi
-GIT_SETUP+=( "--ssh" )
-GIT_SETUP+=( "\"$NAME\"" )
-eval "${GIT_SETUP[@]}"
-git config --list --show-origin
-
-echo
-echo "Generating a new SSH key.."
-ssh-keygen -q -t ed25519 -f ~/.ssh/id_ed25519 -N ""
-echo "Add the newly generated public SSH key on the $VM_NAME:"
-cat ~/.ssh/id_ed25519.pub
-echo "to:"
-echo "https://github.com/settings/keys"
-echo "and"
-echo "$VM_NAME:$WORKSPACE/vm-utility is ready for development."
-
-' "${EXEC_ARGS[@]}" # Arguments passed for bash on the VM as an array
+cat $VMU_HOME/vmu-calls $VMU_HOME/git/git-calls \
+$VMU_HOME/development/dev-vmu | \
+sed '/. git-calls/d' | sed '/. vmu-calls/d' | \
+multipass exec $VM_NAME -- bash -s -- "${SETUP_ARGS[@]}"

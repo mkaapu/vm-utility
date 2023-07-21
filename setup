@@ -123,6 +123,7 @@ ln -fsv $INTERACTIVE -t $BIN_DIR \
   $VMU_HOME/development/dev-setup \
   $VMU_HOME/development/dev-checkout \
   $VMU_HOME/development/dev-vmu \
+  $VMU_HOME/development/dev-vmu-vm \
   $VMU_HOME/development/dev-vm \
   $VMU_HOME/development/mp-purge
 echo "vm-utility installed."
