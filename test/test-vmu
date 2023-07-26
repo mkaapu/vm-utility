@@ -58,13 +58,13 @@ remove_vms() {
   echo "Test-VMs purged."
 }
 
-get_dev-vm_cmd() {
-  local command=( "dev-vm"  )
+get_dev-vmu-vm_cmd() {
+  local command=( "dev-vmu-vm"  )
   command+=( "-n \"John Doe\"" )
   command+=( "-a johndoe@example.com" )
   command+=( "-i $HOST_IP" )
   if [ $REMOTE ] && [ "$REMOTE" != "origin/main" ]; then
-    command+=( "-t $REMOTE" )
+    command+=( "-b ${REMOTE#*/}" )
   fi
   command+=( "$HOST_VM" )
   echo "${command[@]}"
@@ -122,9 +122,9 @@ enable_ssh_to_guest() {
 tstep "Set up the test environment" set_test_env
 tstep "Remove test VMs" remove_vms
 
-tname="Test the dev-vm"
+tname="Test the dev-vmu-vm"
 tname+=$'\n'"(to create VM:$HOST_VM with the IP:$HOST_IP)."
-tcase "$tname" eval $(get_dev-vm_cmd)
+tcase "$tname" eval $(get_dev-vmu-vm_cmd)
 
 tname="Test the launch-vm-agent"
 tname+=$'\n'"(to create VM:$GUEST_VM inside the VM:$HOST_VM)"
