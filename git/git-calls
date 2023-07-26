@@ -32,7 +32,7 @@ git-remote-branch() {
     # check that the remote-tracking branch actually exists
     git ls-remote --exit-code --heads $remote $branch >/dev/null 2>&1
     status=$?
-    if [ $status -eq 0 ]; then echo $track; fi
+    if [ $status -eq 0 ]; then echo $branch; fi
   fi
   return $status
 }

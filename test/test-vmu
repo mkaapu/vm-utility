@@ -21,7 +21,7 @@ HOST_VM="test-vm-agent"
 JENKINS_VM="vm-jenkins"
 GUEST_VM="vm-agent"
 JENKINS_TAG="latest-jdk17"
-REMOTE=$(git-remote-branch)
+BRANCH=$(git-remote-branch)
 
 #######################################
 # Test Step Functions
@@ -63,8 +63,8 @@ get_dev-vmu-vm_cmd() {
   command+=( "-n \"John Doe\"" )
   command+=( "-a johndoe@example.com" )
   command+=( "-i $HOST_IP" )
-  if [ $REMOTE ] && [ "$REMOTE" != "origin/main" ]; then
-    command+=( "-b ${REMOTE#*/}" )
+  if [ $BRANCH ] && [ "$BRANCH" != "main" ]; then
+    command+=( "-b ${BRANCH}" )
   fi
   command+=( "$HOST_VM" )
   echo "${command[@]}"
