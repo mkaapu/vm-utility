@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Create a new Ubuntu VM and clones a git repository inside it.
+# Create a new Ubuntu VM and clone a git repository inside it.
 #
 # Installs Multipass tool if not already installed.
 # Launches a new Multipass instance using mp-launch tool.
