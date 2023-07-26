@@ -1,0 +1,184 @@
+#!/usr/bin/env bash
+#
+# Create a new Ubuntu VM and clones a git repository inside it.
+#
+# Installs Multipass tool if not already installed.
+# Launches a new Multipass instance using mp-launch tool.
+# On the launched instance:
+# - Clones a git repository into a new directory.
+# - With --branch option, checkouts a new local branch.
+# - Creates a simple configuration file for nano (--nano option).
+# - Sets up your identity (--name and --email options)
+# and configures the default text editor (--editor option) for Git.
+# - Generates a new SSH key on the VM, prints the public key and
+# forces access to GitHub repositories via SSH always replacing HTTPS
+# URLs with SSH ones in the VM (-ssh option).
+#
+set -e
+
+#######################################
+# Includes
+#######################################
+. vmu-calls
+
+#######################################
+# DEFAULT VALUES
+#######################################
+
+CPUS="4"
+DISK="128G"
+MEMORY="16G"
+VM_NAME="primary"
+MOUNT=
+IP=
+LAUNCH_ARGS=()
+CHECKOUT_ARGS=()
+SETUP_ARGS=()
+SETUP_NANO=false
+
+#######################################
+# USAGE
+#######################################
+
+usage() {
+  echo "Usage: $0 [options]"
+  echo
+  echo "Creates and starts a new VM and clones a git repository insde it."
+  echo
+  echo "Example:"
+  echo "$ $0 -u https://github.com/mkaapu/vm-utility.git -sn \"Peter Parker\" -a spidey@gmail.com web-vm"
+  echo
+  echo "Options:"
+  echo "  -h, --help                            Displays help on commandline options"
+  echo "  -u, --url <URL>                       The URL or path of the git repository"
+  echo "                                        to clone."
+  echo "  -p, --path <directory>                The path where repository is cloned."
+  echo "                                        Default: /home/ubuntu/<project>"
+  echo "  -b, --branch <branch>                 Name of a branch to checkout"
+  echo "  -n, --name \"<user.name>\"              \"Your name\" (for git config)"
+  echo "  -a, --email <user.email>              Your email address (for git config)"
+  echo "  -e, --editor <core.editor>            Your text editor (for git config)"
+  echo "                                        Default: nano"
+  echo "  --nano                                Creates a simple initial ~/.nanorc file"
+  echo "                                        for nano editor."
+  echo "  -s, --ssh                             A new (ed25519) SSH key is generated."
+  echo "                                        The public key is written to stdout."
+  echo "                                        Also access to GitHub repositories"
+  echo "                                        is forced via SSH by always"
+  echo "                                        replacing HTTPS URLs with SSH ones"
+  echo "                                        (git config --global)."
+  echo "  -c, --cpus <cpus>                     Numbers of CPUs to allocate."
+  echo "                                        Minimum: 1, default: 4."
+  echo "  -d, --disk <disk>                     Disk space to allocate. Positive"
+  echo "                                        integers, in bytes, or with K, M, G"
+  echo "                                        suffix."
+  echo "                                        Minimum: 512M, default: 128G."
+  echo "  -m, --memory <mem>                    Amount of memory to allocate. Positive"
+  echo "                                        integers, in bytes, or with K, M, G"
+  echo "                                        suffix"
+  echo "                                        Minimum: 128M, default: 16G."
+  echo "  -i, --ip <ip>                         Sets a static IP address for the"
+  echo "                                        instance. Note that there will be no"
+  echo "                                        IP address conflict detection with"
+  echo "                                        any existing addresses."
+  echo "  --mount <local-path>:<vm-path>        Mount a local directory inside the"
+  echo "                                        instance. If <vm-path> is omitted,"
+  echo "                                        the mount point will be the same as the"
+  echo "                                        absolute path of <local-path>"
+  echo "Arguments:"
+  echo "  vm-name                               Name for the instance. If it is"
+  echo "                                        'primary' (the configured primary"
+  echo "                                        instance name), the user's home"
+  echo "                                        directory is mounted inside the newly"
+  echo "                                        launced instance, in 'Home'."
+  echo "                                        Default: primary"
+}
+
+#######################################
+# EXECUTION
+#######################################
+
+#######################################
+# Handling command line arguments
+#######################################
+
+if ! OPTS="$(getopt \
+  --longoptions help,url:,path:,branch:,name:,email:,editor:,nano,ssh,\
+cpus:,disk:,memory:,ip:,mount: \
+  --options hu:p:b:n:a:e:sc:d:m:i: \
+  --name "$(basename "$0")" \
+  -- "$@"
+)"; then
+  usage
+  exit 1
+fi
+eval set -- "$OPTS"
+while true; do
+  case "$1" in
+    --help|-h) usage; exit ;;
+    --url|-u) CHECKOUT_ARGS+=( "--url=$2" ); shift 2 ;;
+    --path|-p) CHECKOUT_ARGS+=( "$2" ); shift 2 ;;
+    --name|-n) SETUP_ARGS+=( "$2" ); shift 2 ;;
+    --email|-a) SETUP_ARGS+=( "--email=$2" ); shift 2 ;;
+    --editor|-e) SETUP_ARGS+=( "--editor=$2" ); shift 2 ;;
+    --nano) SETUP_NANO=true; shift ;;
+    --ssh|-s) SETUP_ARGS+=( "--ssh" ); shift ;;
+    --branch|-b) CHECKOUT_ARGS+=( "--branch=$2" ); shift 2 ;;
+    --cpus|-c) CPUS="$2"; shift 2 ;;
+    --disk|-d) DISK="$2"; shift 2 ;;
+    --memory|-m) MEMORY="$2"; shift 2 ;;
+    --ip|-i) IP="$2"; shift 2 ;;
+    --mount) MOUNT="$2"; shift 2 ;;
+    --) shift; break ;;
+    *) echo "DEBUG: No implementation for the option $1" ; exit 1 ;;
+  esac
+done
+ARGS=("$@")
+ARGCOUNT=${#ARGS[@]}
+if [ "$ARGCOUNT" -eq "1" ]; then
+  VM_NAME="${ARGS[0]}"
+elif [ "$ARGCOUNT" -gt "1" ]; then
+  echo "Too many arguments supplied."
+  usage
+  exit 1
+fi
+
+#######################################
+# Main Execution
+#######################################
+
+# Set VMU_HOME
+if ! set_env; then echo "VMU Environment is not set."; exit 1; fi
+
+echo
+echo "Creating and launching the $VM_NAME instance.."
+LAUNCH=( "mp-launch -k -n $VM_NAME -c $CPUS -m $MEMORY -d $DISK" )
+if [ $IP ]; then
+  LAUNCH+=( "--ip=$IP" )
+fi
+if [ $MOUNT ]; then
+  LAUNCH+=( "--mount=$MOUNT" )
+fi
+${LAUNCH[@]}
+
+if (( ${#CHECKOUT_ARGS[@]} )); then
+  echo
+  echo "Cloning the repository inside the $VM_NAME.."
+  cat $VMU_HOME/git/git-calls $VMU_HOME/development/dev-checkout | \
+  sed '/. git-calls/d' | \
+  multipass exec $VM_NAME -- bash -s -- "${CHECKOUT_ARGS[@]}"
+fi
+
+if $SETUP_NANO; then
+  echo
+  echo "Configuring Nano editor inside the $VM_NAME.."
+  cat $VMU_HOME/development/config-nano | \
+  multipass exec $VM_NAME -- bash
+fi
+
+if (( ${#SETUP_ARGS[@]} )); then
+  echo
+  echo "Setting up development environment inside the $VM_NAME.."
+  cat $VMU_HOME/development/dev-setup | \
+  multipass exec $VM_NAME -- bash -s -- "${SETUP_ARGS[@]}"
+fi
