@@ -1,0 +1,286 @@
+#!/usr/bin/env bash
+#
+# Unit tests for git-calls helper functions
+#
+# Run this test set from the root of the repository:
+# $ test/git/test-git-calls
+
+#######################################
+# Includes
+#######################################
+. test/test-calls
+. git/git-calls
+
+#######################################
+# Global Variables
+#######################################
+MAIN_DIR=test.tmp/$(basename $BASH_SOURCE)
+TEST_DIR=$MAIN_DIR/tests
+VMU_DIR=$MAIN_DIR/vm-utility
+VMU_PATH=$(realpath $VMU_DIR)
+#VMU_URL=https://github.com/mkaapu/vm-utility.git
+VMU_URL=ssh://git@github.com/mkaapu/vm-utility.git
+DIR_GROUP1=$DIR_MAIN/group1
+REPO_DIR=$PWD
+
+#######################################
+# Test Step Functions
+#######################################
+
+set_test_env() {
+  ./setup $VMU_DIR
+  export PATH="$VMU_PATH:$PATH"
+  export VMU_HOME=$REPO_DIR
+  mkdir -p $TEST_DIR
+  cd $TEST_DIR
+}
+
+checkout_in_repo() {
+  local status=0
+  local repo=$1
+  local dir=$PWD
+  cd $repo || return $?
+  git-checkout "${@:2}"
+  status=$?
+  cd $dir
+  return $status
+}
+
+checkout_repo_fails() {
+  # cases which fails without existing repository and no given URL
+  if git-checkout "${@}"; then return 1
+  else return 0
+  fi
+}
+
+checkout_remote_in_repo() {
+  # should fail when remote or remote branch is not found
+  local status=0
+  local repo=$1
+  local remote=$2
+  local branch=$3
+  local dir=$PWD
+  cd $repo || return $?
+  if [ $branch ]; then
+    # if branch is found from remote repository
+    if git ls-remote --exit-code --heads $remote $branch >/dev/null 2>&1
+    then
+      git-checkout "" "$branch" "$remote"; status=$?
+    elif git-branch-exists $branch; then
+      # if branch exists locally but not remotely, commit fails
+      if git-checkout "" "$branch" "$remote"; then
+        status=1
+      fi
+    else
+      git-checkout "" "$branch" "$remote"; status=$?
+    fi
+  # if remote repository exists
+  elif git ls-remote $remote >/dev/null 2>$1; then
+    git-checkout "" "" "$remote"; status=$?
+  # checkout fails if remote does not exist
+  elif git-checkout "" "" "$remote"; then
+    status=1
+  fi
+  cd $dir
+  return $status
+}
+
+test_git-checkout() {
+  local errors=0
+
+  tname="Checkout without arguments/repository (fails)"
+  if ! tcase "$tname" checkout_repo_fails
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Clone a repository (args: url - - -)"
+  if ! tcase "$tname" git-checkout $VMU_URL
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Clone a repository to given directory (args: url - - dir)"
+  if ! tcase "$tname" git-checkout $VMU_URL '' '' VMU
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout without arguments in cloned repository"
+  if ! tcase "$tname" checkout_in_repo vm-utility
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: - - - dir) with local repository"
+  if ! tcase "$tname" git-checkout '' '' '' vm-utility
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: url - - -) with local repository"
+  if ! tcase "$tname" git-checkout $VMU_URL
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: url - - -) in repository"
+  if ! tcase "$tname" checkout_in_repo vm-utility $VMU_URL
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: - - - dir) without repository (fails)"
+  if ! tcase "$tname" checkout_repo_fails '' '' '' not-found
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: - - remote -) without repository (fails)"
+  if ! tcase "$tname" checkout_repo_fails '' '' new-world
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: - branch - -) without repository (fails)"
+  if ! tcase "$tname" checkout_repo_fails '' main
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: - branch remote -) without repository (fails)"
+  if ! tcase "$tname" checkout_repo_fails '' main new-world
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: - - remote -) in repository (no URL, fails)"
+  if ! tcase "$tname" checkout_remote_in_repo vm-utility new-world
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: - - remote dir) from remote (no URL, fails)"
+  if ! tcase "$tname" checkout_repo_fails '' '' new-world vm-utility
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Add a named remote for a repository (args: url - remote -)"
+  if ! tcase "$tname" checkout_in_repo vm-utility $VMU_URL '' new-world
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: - - remote -) in repository"
+  if ! tcase "$tname" checkout_remote_in_repo vm-utility new-world
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: - - remote dir) with local repository"
+  if ! tcase "$tname" git-checkout '' '' new-world vm-utility
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout existing branch (args: - branch - -) in repository"
+  if ! tcase "$tname" checkout_in_repo vm-utility '' main
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout existing remote/branch (args: - branch remote -)"
+  if ! tcase "$tname" checkout_in_repo vm-utility '' main new-world
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout new branch (args: - branch - -) in repository"
+  if ! tcase "$tname" checkout_in_repo vm-utility '' new-1
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: - branch - dir) with local repository"
+  if ! tcase "$tname" git-checkout '' main '' vm-utility
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout new branch (args: - branch remote -) in repository"
+  if ! tcase "$tname" checkout_remote_in_repo vm-utility new-world new-2
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: - branch remote -) (only local branch, fails)"
+  if ! tcase "$tname" checkout_remote_in_repo vm-utility new-world new-2
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: - branch - -) (only local branch)"
+  if ! tcase "$tname" checkout_in_repo vm-utility "" new-2
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: - - - dir) origin/main with local repository"
+  if ! tcase "$tname" git-checkout '' '' '' vm-utility
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: url - - dir) with mismatching URL (fails)"
+  if ! tcase "$tname" checkout_repo_fails non-existing-url '' '' VMU
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: url - remote dir) with mismatching URL (fails)"
+  if ! tcase "$tname" checkout_repo_fails wrong '' new-world vm-utility
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: url - remote dir)"
+  if ! tcase "$tname" git-checkout $VMU_URL '' new-vmu new-vmu
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: url - - dir) with local repository"
+  if ! tcase "$tname" git-checkout $VMU_URL '' '' vm-utility
+  then
+    errors=$((errors+1))
+  fi
+
+  tname="Checkout (args: url - remote -) in local repository"
+  if ! tcase "$tname" checkout_in_repo vm-utility $VMU_URL '' new-world
+  then
+    errors=$((errors+1))
+  fi
+
+  return $errors
+}
+
+clean_test_env() {
+  cd $REPO_DIR
+  rm -frv $MAIN_DIR
+}
+
+#######################################
+# Test Case Execution
+#######################################
+
+sname="Setup the test environment"
+tstep "$sname" set_test_env
+
+sname="Testing git-checkout"
+tset "$sname" test_git-checkout
+
+sname="Clean the test environment"
+tstep "$sname" clean_test_env
+
+tsummary
