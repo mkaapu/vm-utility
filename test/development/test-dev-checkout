@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+#
+# Test the dev-checkout tool.
+#
+# Run this test set from the root of the repository:
+# $ test/development/test-dev-checkout
+
+#######################################
+# Includes
+#######################################
+. test/test-calls
+
+#######################################
+# Global Variables
+#######################################
+DIR_MAIN=test.tmp/$(basename $BASH_SOURCE)
+TEST_PATH=$(realpath $DIR_MAIN)
+VMU_URL=https://github.com/mkaapu/vm-utility.git
+DIR_GROUP1=$DIR_MAIN/group1
+TEST_VM_NAME=test-dev-checkout
+VM_HOME_DIR=/home/ubuntu
+VM_VMU_DIR=$VM_HOME_DIR/VMU
+
+#######################################
+# Test Step Functions
+#######################################
+
+set_test_env() {
+  ./setup $DIR_MAIN
+  export PATH="$TEST_PATH:$PATH"
+  export VMU_HOME=$PWD
+}
+
+clone_repository() {
+  dev-checkout --url $VMU_URL $DIR_GROUP1
+}
+
+checkout_new_branch() {
+  dev-checkout --branch new-branch $DIR_GROUP1
+}
+
+checkout_default() {
+  dev-checkout $DIR_GROUP1
+}
+
+add_remote() {
+  dev-checkout --remote new-world --url $VMU_URL $DIR_GROUP1
+}
+
+set_dev_setup() {
+  local name="Test User"
+  local email=fake@mail.net
+  multipass launch -n $TEST_VM_NAME --mount $PWD:$VM_VMU_DIR
+  multipass exec $TEST_VM_NAME -- sudo $VM_VMU_DIR/setup
+  multipass exec $TEST_VM_NAME --working-directory $VM_HOME_DIR -- \
+  dev-checkout -u $VMU_URL -n "$name" -a $email -e emacs -s --nano
+}
+
+clean_test_env() {
+  rm -frv $DIR_MAIN
+  mp-delete -pv $TEST_VM_NAME
+}
+
+#######################################
+# Test Case Execution
+#######################################
+sname="Set up the test environment"
+tstep "$sname" set_test_env
+
+tname="Clone the vm-utility"
+tcase "$tname" clone_repository
+
+tname="Switch to a new branch"
+tcase "$tname" checkout_new_branch
+
+tname="Add a new remote"
+tcase "$tname" add_remote
+
+tname="Switch to a default branch"
+tcase "$tname" checkout_default
+
+tname="Clone and set development environment in the VM:$TEST_VM_NAME"
+tcase "$tname" set_dev_setup
+
+sname="Clean the test environment"
+tstep "$sname" clean_test_env
+
+tsummary
